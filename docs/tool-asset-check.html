@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asset check: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  #drop { border: 3px dashed var(--ink); padding: 34px 16px; text-align: center; cursor: pointer; }
+  #drop.over { border-color: var(--accent); background: var(--accent-w); }
+  .icon { width: 28px; height: 28px; stroke: var(--accent); fill: none; stroke-width: 1.4; }
+  .verdict {
+    border: 0; border-left: 8px solid var(--ink); background: var(--paper-2);
+    padding: 12px 14px; font-family: var(--mono); font-size: .8rem;
+  }
+  .verdict.bad { background: var(--accent); border-left-color: var(--ink); color: var(--paper); }
+  td.f { font-family: var(--mono); font-size: .82rem; }
+</style>
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Asset check</h1>
+<p class="subtitle">The gate. Nothing goes on a phone until it passes this.</p>
+
+<p>Drop a <span class="mono">.glb</span> here and this page opens it: the header, the JSON chunk and the binary chunk. It counts what is actually inside: triangles, textures, and their real pixel dimensions. The file is
+read on this device. Nothing is uploaded.</p>
+
+<div class="panel noprint">
+  <div id="drop">
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+    <p><strong>Drop a .glb or .usdz</strong><br><span class="note">or tap to choose a file</span></p>
+    <input type="file" id="file" accept=".glb,.usdz,model/gltf-binary" style="display:none">
+  </div>
+</div>
+
+<div id="result"></div>
+
+<h2>The budget, and why each number exists</h2>
+<table>
+  <tr><th style="width:22%">Limit</th><th>Why</th></tr>
+  <tr><td class="f">&le; 100,000 tris</td><td>Above this a mid-range Android starts dropping frames, and dropped frames read as broken tracking even when tracking is fine.</td></tr>
+  <tr><td class="f">&le; 2048 px</td><td>A 4096px texture is four times the memory of a 2048px one and looks identical on a phone held at arm's length. It is a common and avoidable source of file weight.</td></tr>
+  <tr><td class="f">&le; 10 MB</td><td>The file is typically opened on mobile data, in a shop, while standing. Beyond roughly 10 MB, abandonment rises sharply.</td></tr>
+  <tr><td class="f">&le; 8 s</td><td>Time from tap to visible content. Beyond eight seconds most users abandon the page. This figure is measured with a stopwatch rather than by a parser.</td></tr>
+</table>
+
+<h2>What to do when it fails</h2>
+<table>
+  <tr><th style="width:26%">Failure</th><th>Fix, in order of least damage</th></tr>
+  <tr><td>Too many triangles</td><td>Decimate in the tool that made it (Polycam and Scaniverse both export a lower-poly option). Crop away the floor and background the scan picked up. Usually half the mesh is room, not product.</td></tr>
+  <tr><td>Texture too large</td><td>Resize the texture image to 2048 or 1024 and re-export. For a small object on a shelf, 1024 is plenty.</td></tr>
+  <tr><td>File too heavy</td><td>Fix the two above first; they are usually the whole story. Then check for a second unused texture set riding along.</td></tr>
+  <tr><td>Too many meshes</td><td>Merge. Each separate mesh is another draw call, and draw calls are what actually kill phone framerate.</td></tr>
+</table>
+
+<h2>Checked so far</h2>
+<div class="readout" id="log">Nothing checked yet.</div>
+<p class="noprint"><button id="clear">Clear the log</button></p>
+
+<footer>tool-asset-check &middot; Day 2 Drill 3 and the Day 3 asset gate &middot; runs entirely on this device</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var el = function (id) { return document.getElementById(id); };
+  var LIM = { tris: 100000, tex: 2048, mb: 10 };
+  var KEY = "xr.assetlog";
+
+  function imgSize(bytes) {
+    // PNG
+    if (bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50) {
+      var dv = new DataView(bytes.buffer, bytes.byteOffset);
+      return { w: dv.getUint32(16), h: dv.getUint32(20), type: "png" };
+    }
+    // JPEG: walk the markers to a SOF
+    if (bytes.length > 4 && bytes[0] === 0xFF && bytes[1] === 0xD8) {
+      var i = 2;
+      while (i < bytes.length - 9) {
+        if (bytes[i] !== 0xFF) { i++; continue; }
+        var m = bytes[i + 1];
+        if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) {
+          return { h: (bytes[i + 5] << 8) | bytes[i + 6], w: (bytes[i + 7] << 8) | bytes[i + 8], type: "jpeg" };
+        }
+        i += 2 + ((bytes[i + 2] << 8) | bytes[i + 3]);
+      }
+    }
+    return null;
+  }
+
+  function parseGLB(buf) {
+    var dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x46546C67) throw new Error("Not a .glb. The first four bytes are not 'glTF'.");
+    var len = dv.getUint32(8, true), off = 12, json = null, bin = null;
+    while (off < len && off + 8 <= buf.byteLength) {
+      var cl = dv.getUint32(off, true), ct = dv.getUint32(off + 4, true);
+      var body = new Uint8Array(buf, off + 8, Math.min(cl, buf.byteLength - off - 8));
+      if (ct === 0x4E4F534A) json = JSON.parse(new TextDecoder().decode(body));
+      else if (ct === 0x004E4942) bin = body;
+      off += 8 + cl + ((4 - (cl % 4)) % 4);
+    }
+    if (!json) throw new Error("No JSON chunk. The file is damaged.");
+    return { json: json, bin: bin };
+  }
+
+  function report(g, file) {
+    var j = g.json, acc = j.accessors || [], bv = j.bufferViews || [];
+    var tris = 0, meshes = (j.meshes || []).length, prims = 0;
+    (j.meshes || []).forEach(function (m) {
+      (m.primitives || []).forEach(function (p) {
+        prims++;
+        var mode = p.mode === undefined ? 4 : p.mode;
+        if (mode !== 4) return;
+        var n = p.indices !== undefined ? (acc[p.indices] || {}).count
+                                        : (acc[(p.attributes || {}).POSITION] || {}).count;
+        if (n) tris += Math.floor(n / 3);
+      });
+    });
+
+    var imgs = [], biggest = 0;
+    (j.images || []).forEach(function (im, i) {
+      var s = null;
+      if (im.bufferView !== undefined && g.bin) {
+        var v = bv[im.bufferView];
+        s = imgSize(g.bin.subarray(v.byteOffset || 0, (v.byteOffset || 0) + v.byteLength));
+      }
+      var label = im.name || im.uri || ("image " + i);
+      if (s) { biggest = Math.max(biggest, s.w, s.h); imgs.push(label + ": " + s.w + " × " + s.h + " " + s.type); }
+      else imgs.push(label + ": external or unreadable, open it and check by hand");
+    });
+
+    var mb = file.size / 1048576;
+    var fails = [];
+    if (tris > LIM.tris) fails.push("triangles");
+    if (biggest > LIM.tex) fails.push("texture size");
+    if (mb > LIM.mb) fails.push("file size");
+
+    var rows = [
+      ["Triangles", tris ? tris.toLocaleString("en-IN") : "could not count", tris ? (tris <= LIM.tris ? "PASS" : "FAIL, limit 100,000") : "n/a"],
+      ["File size", mb.toFixed(2) + " MB", mb <= LIM.mb ? "PASS" : "FAIL, limit 10 MB"],
+      ["Largest texture", biggest ? biggest + " px" : (j.images || []).length ? "unreadable" : "no textures", biggest ? (biggest <= LIM.tex ? "PASS" : "FAIL, limit 2048 px") : "n/a"],
+      ["Meshes / primitives", meshes + " / " + prims, prims <= 12 ? "PASS" : "heavy, merge where you can"],
+      ["Materials", (j.materials || []).length, ""],
+      ["Animations", (j.animations || []).length, ""],
+      ["Generator", (j.asset && j.asset.generator) || "unstated", ""]
+    ];
+
+    var html = '<div class="panel"><h3>' + esc(file.name) + '</h3>' +
+      '<div class="verdict' + (fails.length ? " bad" : "") + '">' +
+      (fails.length ? "FAILS THE GATE: " + fails.join(", ") : "PASSES THE GATE: put it on a phone") +
+      '</div><table>' +
+      rows.map(function (r) {
+        return "<tr><td>" + r[0] + '</td><td class="f">' + esc(String(r[1])) + '</td><td class="f">' + r[2] + "</td></tr>";
+      }).join("") + "</table>";
+    if (imgs.length) html += "<p><strong>Textures</strong></p><div class=\"readout\">" + esc(imgs.join("\n")) + "</div>";
+    html += "</div>";
+    el("result").innerHTML = html;
+
+    logIt(file.name + "  ·  " + (tris ? tris.toLocaleString("en-IN") + " tris" : "tris ?") +
+      "  ·  " + mb.toFixed(2) + " MB  ·  " + (biggest ? biggest + " px" : "no tex") +
+      "  ·  " + (fails.length ? "FAIL" : "PASS"));
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function logIt(line) {
+    var l = [];
+    try { l = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) {}
+    l.unshift(new Date().toLocaleTimeString() + "  " + line);
+    l = l.slice(0, 40);
+    try { localStorage.setItem(KEY, JSON.stringify(l)); } catch (e) {}
+    draw(l);
+  }
+
+  function draw(l) {
+    el("log").textContent = l.length ? l.join("\n") : "Nothing checked yet.";
+  }
+
+  function handle(f) {
+    if (!f) return;
+    if (/\.usdz$/i.test(f.name)) {
+      var mb = f.size / 1048576;
+      el("result").innerHTML = '<div class="panel"><h3>' + esc(f.name) + '</h3>' +
+        '<div class="verdict' + (mb > LIM.mb ? " bad" : "") + '">' +
+        (mb > LIM.mb ? "FAILS on size: " : "Size is fine: ") + mb.toFixed(2) + " MB</div>" +
+        "<p>A <span class=\"mono\">.usdz</span> is a zip archive, so this page can only weigh it. " +
+        "Check triangles and textures on the <span class=\"mono\">.glb</span> you exported alongside it. " +
+        "and always export both from the same source.</p></div>";
+      logIt(f.name + "  ·  usdz  ·  " + mb.toFixed(2) + " MB");
+      return;
+    }
+    var r = new FileReader();
+    r.onload = function () {
+      try { report(parseGLB(r.result), f); }
+      catch (err) {
+        el("result").innerHTML = '<div class="panel"><div class="verdict bad">Could not read it</div><p>' +
+          esc(err.message) + "</p></div>";
+      }
+    };
+    r.readAsArrayBuffer(f);
+  }
+
+  var drop = el("drop");
+  drop.addEventListener("click", function () { el("file").click(); });
+  el("file").addEventListener("change", function (e) { handle(e.target.files[0]); });
+  ["dragenter", "dragover"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    handle(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+  });
+  el("clear").addEventListener("click", function () {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    draw([]);
+  });
+
+  try { draw(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (e) { draw([]); }
+})();
+</script>
+</body>
+</html>

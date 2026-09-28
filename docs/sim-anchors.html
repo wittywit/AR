@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anchors, Drift and Loss: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Anchors, Drift &amp; Loss</h1>
+<p class="subtitle">Four of the six words, in slow motion: anchor, tracking, occlusion, drift.</p>
+
+<p>This is a fake camera view. Drag inside it, or let it sway on its own, and watch what the anchor does.
+Everything that goes wrong in a real AR demo goes wrong here first. Here the cause stays visible.</p>
+
+<canvas id="c" width="900" height="460" aria-label="Simulated camera view"></canvas>
+
+<div class="panel noprint">
+  <div class="row">
+    <div>
+      <label for="anchor">Anchor type</label>
+      <select id="anchor">
+        <option value="image">Image target: printed page</option>
+        <option value="plane">Plane: floor or table</option>
+        <option value="face">Face: front camera</option>
+      </select>
+    </div>
+    <div>
+      <label for="tex">Surface texture <span class="mono" id="texv">70</span></label>
+      <input type="range" id="tex" min="0" max="100" value="70">
+    </div>
+    <div>
+      <label for="light">Light <span class="mono" id="lightv">75</span></label>
+      <input type="range" id="light" min="0" max="100" value="75">
+    </div>
+  </div>
+  <div style="margin-top:10px">
+    <button id="sway" class="on">Auto sway</button>
+    <button id="occ">Occlusion: on</button>
+    <button id="shadow" class="on">Contact shadow: on</button>
+    <button id="reset">Re-anchor</button>
+  </div>
+</div>
+
+<div class="panel">
+  <h3 id="state">Tracking</h3>
+  <div class="readout" id="read"></div>
+  <p id="diag" class="note"></p>
+</div>
+
+<h2>What each control demonstrates</h2>
+<table>
+  <tr><th style="width:24%">Control</th><th>The principle it demonstrates</th></tr>
+  <tr><td>Surface texture</td><td>Reduce it to zero. On a plain wall, a white studio sweep or a minimal cover, the anchor is lost: <em>no texture, no tracking.</em></td></tr>
+  <tr><td>Light</td><td>A good target under poor light behaves like a poor target. A large share of reported AR failures are lighting problems rather than software faults.</td></tr>
+  <tr><td>Occlusion</td><td>Turn it off and the object passes straight through the pillar. Nothing destroys belief faster, and nothing is harder to get right on a phone.</td></tr>
+  <tr><td>Contact shadow</td><td>Turn it off and the object stops standing on the floor and starts floating in front of it. One soft ellipse is the cheapest believability you will ever buy.</td></tr>
+  <tr><td>Re-anchor</td><td>What a user does instinctively when it drifts. Notice that they have to point back at the trigger. Design for that, and do not hope it never happens.</td></tr>
+</table>
+
+<h3>The three anchor types, with their failure conditions</h3>
+<table>
+  <tr><th style="width:20%">Anchor</th><th>Holds because</th><th>Fails when</th></tr>
+  <tr><td>Image target</td><td>It recognises a specific, textured, flat thing you designed.</td><td>The page leaves the frame, folds, curls, or catches a reflection.</td></tr>
+  <tr><td>Plane</td><td>It found a flat surface with enough visual detail to lock to.</td><td>The floor is plain, glossy, dark, or the user is walking.</td></tr>
+  <tr><td>Face</td><td>Landmarks are far more stable than the general world.</td><td>Extreme angles, hair over the face, more than one face, bad backlight.</td></tr>
+</table>
+
+<footer>sim-anchors &middot; Day 1 Theory 2, Day 3 Theory 5 &middot; no camera required</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var c = document.getElementById("c"), x = c.getContext("2d");
+  var W = c.width, H = c.height;
+
+  var st = {
+    cam: 0, target: 0, vel: 0, drift: 0, lost: 0, quality: 1,
+    sway: true, occ: true, shadow: true, anchor: "image",
+    tex: 70, light: 75, dragging: false, lastX: 0, t: 0, lostTime: 0, reacq: 0
+  };
+
+  var ANCHOR_X = 0;        // world position of the anchor, in "cm"
+  var FOV = 260;           // half-width of the view in cm
+
+  function el(id) { return document.getElementById(id); }
+
+  function bind() {
+    el("anchor").addEventListener("change", function () { st.anchor = this.value; st.drift = 0; });
+    el("tex").addEventListener("input", function () { st.tex = +this.value; el("texv").textContent = this.value; });
+    el("light").addEventListener("input", function () { st.light = +this.value; el("lightv").textContent = this.value; });
+    el("sway").addEventListener("click", function () { st.sway = !st.sway; this.classList.toggle("on", st.sway); });
+    el("occ").addEventListener("click", function () {
+      st.occ = !st.occ; this.classList.toggle("on", st.occ);
+      this.textContent = "Occlusion: " + (st.occ ? "on" : "off");
+    });
+    el("shadow").addEventListener("click", function () {
+      st.shadow = !st.shadow; this.classList.toggle("on", st.shadow);
+      this.textContent = "Contact shadow: " + (st.shadow ? "on" : "off");
+    });
+    el("reset").addEventListener("click", function () { st.drift = 0; st.reacq = 1; });
+
+    function down(e) { st.dragging = true; st.lastX = pt(e); st.sway = false; el("sway").classList.remove("on"); }
+    function move(e) {
+      if (!st.dragging) return;
+      var p = pt(e); st.vel = (st.lastX - p) * 0.9; st.lastX = p; e.preventDefault();
+    }
+    function up() { st.dragging = false; }
+    function pt(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
+    c.addEventListener("mousedown", down); window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+    c.addEventListener("touchstart", down, { passive: true });
+    c.addEventListener("touchmove", move, { passive: false });
+    c.addEventListener("touchend", up);
+  }
+
+  function scene() {
+    // quality of the tracking signal
+    var texQ = st.tex / 100, litQ = st.light / 100;
+    var lightPenalty = litQ < 0.25 ? litQ / 0.25 : litQ > 0.9 ? 1 - (litQ - 0.9) * 4 : 1;
+    var base = st.anchor === "face" ? 0.45 + 0.55 * texQ : texQ;
+    st.quality = Math.max(0, Math.min(1, base * lightPenalty));
+
+    // camera motion
+    if (st.sway) st.vel += Math.sin(st.t * 0.011) * 0.55;
+    st.vel *= 0.90;
+    st.cam += st.vel;
+    st.cam = Math.max(-360, Math.min(360, st.cam));
+
+    // is the anchor in frame?
+    var rel = ANCHOR_X - st.cam;
+    var inFrame = Math.abs(rel) < FOV * 0.78;
+    var speed = Math.abs(st.vel);
+    var tracking = inFrame && st.quality > 0.18 && speed < 6 + st.quality * 10;
+
+    if (tracking) {
+      st.lostTime = 0;
+      st.drift += (1 - st.quality) * (0.05 + speed * 0.012);
+      if (st.reacq > 0) { st.drift *= 0.80; st.reacq -= 0.05; }
+    } else {
+      st.lostTime += 1 / 60;
+      st.drift += (1 - st.quality) * 0.02;
+    }
+    return { tracking: tracking, inFrame: inFrame, speed: speed, rel: rel };
+  }
+
+  function draw(s) {
+    x.clearRect(0, 0, W, H);
+    var lit = 0.35 + 0.65 * (st.light / 100);
+
+    // --- the real room, seen through the camera ---
+    var g = Math.round(255 * lit);
+    x.fillStyle = "rgb(" + g + "," + g + "," + g + ")";
+    x.fillRect(0, 0, W, H);
+
+    var horizon = H * 0.56, ink = "rgba(0,0,0," + (0.25 + 0.7 * lit) + ")";
+    x.strokeStyle = ink; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(0, horizon); x.lineTo(W, horizon); x.stroke();
+
+    // floor texture scaled by the texture slider
+    var density = 2 + Math.round(st.tex / 100 * 26);
+    x.lineWidth = 0.7;
+    for (var i = -density; i <= density; i++) {
+      var wx = i * (720 / density) - (st.cam % (720 / density));
+      var sxp = W / 2 + wx * (W / 2) / FOV;
+      x.beginPath(); x.moveTo(sxp, horizon); x.lineTo(W / 2 + (sxp - W / 2) * 2.6, H); x.stroke();
+    }
+    for (var r = 1; r <= Math.max(1, Math.round(st.tex / 100 * 7)); r++) {
+      var yy = horizon + Math.pow(r / 7, 2) * (H - horizon);
+      x.beginPath(); x.moveTo(0, yy); x.lineTo(W, yy); x.stroke();
+    }
+
+    // --- the trigger itself ---
+    var relX = ANCHOR_X - st.cam;
+    var tsx = W / 2 + relX * (W / 2) / FOV;
+    x.save();
+    x.strokeStyle = ink; x.lineWidth = 1.4;
+    if (st.anchor === "image") {
+      x.strokeRect(tsx - 58, horizon - 12, 116, 76);
+      x.beginPath(); x.moveTo(tsx - 58, horizon + 18); x.lineTo(tsx + 58, horizon + 18); x.stroke();
+      x.font = "10px 'Courier New', monospace"; x.fillStyle = ink;
+      x.fillText("PRINTED TARGET", tsx - 52, horizon + 58);
+      // feature dots, count follows the texture slider
+      var n = Math.round(st.tex / 100 * 40);
+      for (var d = 0; d < n; d++) {
+        var a = (d * 97 % 113) / 113, b = (d * 61 % 71) / 71;
+        x.fillRect(tsx - 56 + a * 112, horizon - 10 + b * 72, 1.6, 1.6);
+      }
+    } else if (st.anchor === "plane") {
+      x.beginPath();
+      x.ellipse(tsx, horizon + 66, 130, 30, 0, 0, 6.3); x.stroke();
+      x.font = "10px 'Courier New', monospace"; x.fillStyle = ink;
+      x.fillText("DETECTED PLANE", tsx - 52, horizon + 110);
+    } else {
+      x.beginPath(); x.ellipse(tsx, horizon - 30, 56, 74, 0, 0, 6.3); x.stroke();
+      var lm = [[-22, -18], [22, -18], [0, 4], [-20, 30], [20, 30], [0, 34], [-34, -4], [34, -4]];
+      x.fillStyle = ink;
+      lm.forEach(function (p) { x.fillRect(tsx + p[0] - 2, horizon - 30 + p[1] - 2, 4, 4); });
+      x.font = "10px 'Courier New', monospace";
+      x.fillText("FACE LANDMARKS", tsx - 52, horizon + 62);
+    }
+    x.restore();
+
+    // --- the virtual payload ---
+    var px = tsx + st.drift * (W / 2) / FOV;
+    var py = st.anchor === "face" ? horizon - 30 : horizon + (st.anchor === "plane" ? 60 : 30);
+
+    var alive = s.tracking || st.lostTime < 0.45;
+    x.save();
+    x.globalAlpha = alive ? 1 : 0.16;
+    if (!s.tracking) { x.setLineDash([5, 4]); }
+
+    if (st.shadow && st.anchor !== "face") {
+      x.globalAlpha *= 0.28; x.fillStyle = "#000";
+      x.beginPath(); x.ellipse(px, py + 4, 44, 10, 0, 0, 6.3); x.fill();
+      x.globalAlpha = alive ? 1 : 0.16;
+    }
+    x.fillStyle = "#000"; x.strokeStyle = "#000"; x.lineWidth = 1.5;
+    if (st.anchor === "face") {
+      // a pair of virtual frames on the landmarks
+      x.beginPath(); x.rect(px - 40, py - 26, 32, 22); x.rect(px + 8, py - 26, 32, 22); x.stroke();
+      x.beginPath(); x.moveTo(px - 8, py - 18); x.lineTo(px + 8, py - 18); x.stroke();
+    } else {
+      x.beginPath();
+      x.moveTo(px - 30, py); x.lineTo(px + 30, py);
+      x.lineTo(px + 20, py - 78); x.lineTo(px - 20, py - 78); x.closePath();
+      if (alive) x.fill(); else x.stroke();
+      x.fillStyle = "#fff"; x.font = "10px 'Courier New', monospace";
+      if (alive) x.fillText("PAYLOAD", px - 24, py - 40);
+    }
+    x.setLineDash([]);
+    x.restore();
+
+    // --- occlusion: a real pillar in front of the virtual object ---
+    var pillarWorld = 120;
+    var prx = W / 2 + (pillarWorld - st.cam) * (W / 2) / FOV;
+    x.save();
+    if (st.occ) {
+      x.fillStyle = "rgb(" + Math.round(g * 0.82) + "," + Math.round(g * 0.82) + "," + Math.round(g * 0.82) + ")";
+      x.fillRect(prx - 34, 0, 68, H);
+      x.strokeStyle = ink; x.lineWidth = 1.2; x.strokeRect(prx - 34, 0, 68, H);
+    } else {
+      x.globalAlpha = 0.22;
+      x.strokeStyle = "#000"; x.lineWidth = 1.2; x.setLineDash([4, 4]);
+      x.strokeRect(prx - 34, 0, 68, H); x.setLineDash([]);
+    }
+    x.fillStyle = ink; x.font = "10px 'Courier New', monospace";
+    x.fillText("REAL PILLAR", prx - 32, H - 14);
+    x.restore();
+
+    // --- HUD ---
+    x.save();
+    x.fillStyle = s.tracking ? "#111" : "#e63420"; x.fillRect(0, 0, 250, 26);
+    x.fillStyle = "#fff"; x.font = "11px 'Courier New', monospace";
+    x.fillText(s.tracking ? "TRACKING" : (s.inFrame ? "TRACKING LOST" : "TARGET OUT OF FRAME"), 12, 17);
+    x.fillText("drift " + st.drift.toFixed(1) + " cm", 150, 17);
+    x.restore();
+
+    // frame edge
+    x.strokeStyle = "#000"; x.lineWidth = 2; x.strokeRect(1, 1, W - 2, H - 2);
+  }
+
+  function diagnose(s) {
+    if (!s.inFrame) return "The trigger has left the frame. The content has nothing to attach to. That is not a fault, it is the definition of an anchor. Design the experience so people have a reason to keep pointing at it.";
+    if (st.quality < 0.18) {
+      if (st.light < 25) return "Too dark. The camera cannot find features it cannot see. The target is fine; the room is not.";
+      if (st.light > 90) return "Blown out. Direct light and glare erase the same detail darkness hides.";
+      return "The surface has almost no texture. There is nothing to recognise. No texture, no tracking.";
+    }
+    if (s.speed > 6 + st.quality * 10) return "Moving too fast for this target. Motion blur destroys features. Weak targets need slow, deliberate movement, which users will not give you.";
+    if (st.drift > 8) return "Drift is now visible to the eye. The object has slid off its anchor. A user will fix this by pointing back at the trigger, so make re-acquiring obvious.";
+    if (st.drift > 3) return "Drift is accumulating. Small errors compound every frame. Raise the texture and the drift slows down.";
+    return "Locked and stable. This is what a well-textured target in even light looks like.";
+  }
+
+  function loop() {
+    st.t++;
+    var s = scene();
+    draw(s);
+    document.getElementById("state").textContent =
+      s.tracking ? "Tracking: locked" : (s.inFrame ? "Tracking lost" : "Target out of frame");
+    document.getElementById("read").textContent =
+      "anchor      " + st.anchor +
+      "\nsignal      " + Math.round(st.quality * 100) + "%" +
+      "\ncamera      " + (Math.abs(st.vel) < 0.4 ? "still" : Math.abs(st.vel) < 4 ? "moving" : "moving fast") +
+      "\ndrift       " + st.drift.toFixed(2) + " cm" +
+      "\nocclusion   " + (st.occ ? "on" : "off") +
+      "\nshadow      " + (st.shadow ? "on" : "off");
+    document.getElementById("diag").textContent = diagnose(s);
+    requestAnimationFrame(loop);
+  }
+
+  bind();
+  loop();
+})();
+</script>
+</body>
+</html>

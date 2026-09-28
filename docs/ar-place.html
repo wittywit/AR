@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Place to AR: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  model-viewer {
+    width: 100%; height: 62vh; min-height: 340px;
+    background: var(--paper); border: 2px solid var(--ink); display: block;
+  }
+  #arbtn {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    font-family: var(--sans); font-size: 0.68rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .13em;
+    background: var(--accent); color: var(--paper); border: 2px solid var(--accent);
+    padding: .6em 1.1em; cursor: pointer;
+  }
+  .viewerbox { position: relative; }
+  .icon { width: 1em; height: 1em; vertical-align: -0.12em; stroke: currentColor; fill: none; stroke-width: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Place &rarr; AR</h1>
+<p class="subtitle">The Placed Product. A 3D object standing on a real floor, at its real size.</p>
+
+<p>This page hands your model to the phone's own AR viewer: Scene Viewer on Android, AR Quick Look on
+iOS. No app, no account, no code. The web page is only the doorway.</p>
+
+<div class="viewerbox panel">
+  <model-viewer
+    id="mv"
+    src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+    ios-src=""
+    alt="3D model"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-scale="fixed"
+    camera-controls
+    touch-action="pan-y"
+    shadow-intensity="1"
+    exposure="1"
+    environment-image="neutral">
+    <button id="arbtn" slot="ar-button">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>
+      View in your room
+    </button>
+  </model-viewer>
+</div>
+
+<div class="panel">
+  <h3>1 &middot; Load your own model</h3>
+  <div class="row">
+    <div>
+      <label for="glb">.glb, for Android and this preview</label>
+      <input type="file" id="glb" accept=".glb,model/gltf-binary">
+    </div>
+    <div>
+      <label for="usdz">.usdz, for iPhone AR (optional)</label>
+      <input type="file" id="usdz" accept=".usdz,model/vnd.usdz+zip">
+    </div>
+  </div>
+  <p class="note">Nothing uploads. The file is read straight off this device.
+  No <span class="mono">.usdz</span>? iPhones will still show the preview here, but the AR button needs one.</p>
+  <div class="readout" id="filenote">Showing the built-in demo model.</div>
+</div>
+
+<div class="panel">
+  <h3>2 &middot; Get the scale right</h3>
+  <p>AR has one unit: the metre. <strong>1 unit = 1 m.</strong> If your bag comes into the room the size of a
+  sofa, the model was not authored in metres. It was authored in centimetres or inches and never converted.</p>
+  <div class="row">
+    <div>
+      <label for="scale">Rehearsal scale <span class="mono" id="sv">1.00&times;</span></label>
+      <input type="range" id="scale" min="10" max="300" value="100">
+    </div>
+    <div>
+      <label>Compare against</label>
+      <button data-cmp="0.30">A4 sheet, 0.30 m</button>
+      <button data-cmp="0.45">Chair seat, 0.45 m</button>
+      <button data-cmp="1.70">A person, 1.70 m</button>
+    </div>
+  </div>
+  <div class="readout" id="scaleout">At 1.00&times; the model reads as its authored size.</div>
+  <p class="note">The slider is a rehearsal only. In real AR the object is placed at true size, because
+  <span class="mono">ar-scale="fixed"</span> is set, which is what a product needs.
+  Pinch-to-resize conceals an incorrectly authored model rather than correcting it.</p>
+</div>
+
+<div class="panel">
+  <h3>3 &middot; Believability switches</h3>
+  <div class="row">
+    <div>
+      <label for="shadow">Contact shadow <span class="mono" id="shv">1.0</span></label>
+      <input type="range" id="shadow" min="0" max="100" value="100">
+    </div>
+    <div>
+      <label for="exposure">Exposure <span class="mono" id="exv">1.0</span></label>
+      <input type="range" id="exposure" min="10" max="220" value="100">
+    </div>
+  </div>
+  <p>Pull the shadow to zero. The object stops sitting on the floor and starts floating in front of it.
+  That single dark smudge under the object is doing more work than any amount of material detail.
+  Match exposure to the room: an object lit brighter than its surroundings reads as a sticker.</p>
+</div>
+
+<h2>Run it properly</h2>
+<table>
+  <tr><th style="width:28%">Step</th><th>What to look for</th></tr>
+  <tr><td>Point at the floor</td><td>Sweep slowly. A plain, evenly-lit floor with some texture finds a plane in a second or two. Polished marble and plain carpet are the hard cases.</td></tr>
+  <tr><td>Place it</td><td>Does it land at the size you expected? Note the answer before you adjust anything.</td></tr>
+  <tr><td>Walk a full circle</td><td>The object should stay put. If it slides with you, the anchor is weak. That is drift, and it is a lighting and texture problem, not a model problem.</td></tr>
+  <tr><td>Kneel down</td><td>Look at where the object meets the floor. That contact edge is where believability is won or lost.</td></tr>
+  <tr><td>Time it</td><td>From tapping the button to seeing the object: under eight seconds, or the viewer is gone.</td></tr>
+</table>
+
+<h2>The budget</h2>
+<table>
+  <tr><th>Triangles</th><th>Texture</th><th>File</th><th>Time to content</th></tr>
+  <tr><td>&le; 100,000</td><td>&le; 2048 px</td><td>&le; 10 MB</td><td>&le; 8 s</td></tr>
+</table>
+<p>Run every model through <a href="tool-asset-check.html">the asset check</a> before it gets near a phone.
+A model that fails the gate should be corrected before it is submitted, not at the showcase.</p>
+
+<footer>ar-place &middot; Day 2 Drill 3, Day 3 Drill 4 &middot; native AR handoff &middot; HTTPS or localhost &middot; nothing is uploaded</footer>
+</div>
+
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var el = function (id) { return document.getElementById(id); };
+  var mv = el("mv");
+
+  if (!window.isSecureContext) {
+    el("filenote").textContent =
+      "Not a secure origin. The AR handoff will be blocked. Serve over localhost or HTTPS.";
+  }
+
+  el("glb").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    mv.src = URL.createObjectURL(f);
+    el("filenote").textContent = "Model: " + f.name + "  ·  " + (f.size / 1048576).toFixed(2) + " MB" +
+      (f.size > 10485760 ? "  ·  OVER the 10 MB budget" : "  ·  within the 10 MB budget");
+  });
+
+  el("usdz").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    mv.setAttribute("ios-src", URL.createObjectURL(f));
+    el("filenote").textContent += "  |  iOS: " + f.name;
+  });
+
+  function cmpText(s) {
+    var refs = [["an A4 sheet", 0.30], ["a chair seat", 0.45], ["a person", 1.70]];
+    var out = [];
+    for (var i = 0; i < refs.length; i++) out.push(refs[i][0] + ": " + (s / refs[i][1]).toFixed(2) + "× its height");
+    return out.join("   ·   ");
+  }
+
+  el("scale").addEventListener("input", function () {
+    var s = +this.value / 100;
+    el("sv").textContent = s.toFixed(2) + "×";
+    mv.setAttribute("scale", s + " " + s + " " + s);
+    el("scaleout").textContent = "Rehearsal scale " + s.toFixed(2) + "×.   Against " + cmpText(s);
+  });
+
+  var btns = document.querySelectorAll("[data-cmp]");
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener("click", function () {
+      el("scaleout").textContent =
+        "Reference height " + (+this.dataset.cmp).toFixed(2) + " m. Hold the real thing next to the placed " +
+        "object before you argue about the model.";
+    });
+  }
+
+  el("shadow").addEventListener("input", function () {
+    var v = +this.value / 100;
+    el("shv").textContent = v.toFixed(1);
+    mv.setAttribute("shadow-intensity", v);
+  });
+
+  el("exposure").addEventListener("input", function () {
+    var v = +this.value / 100;
+    el("exv").textContent = v.toFixed(1);
+    mv.setAttribute("exposure", v);
+  });
+
+  mv.addEventListener("error", function () {
+    el("filenote").textContent = "That model would not load. Check that it is a valid .glb. If the demo " +
+      "model failed, you are offline: use the bundle in README §Plan B.";
+  });
+})();
+</script>
+</body>
+</html>

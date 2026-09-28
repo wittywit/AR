@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extended Reality: AR Course Handbook</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+<h1>Extended Reality</h1>
+<p class="subtitle">A three-day, phone-only augmented reality workshop for fashion communication.</p>
+
+<p>Every tool listed here runs inside a phone browser. There is no app store, no account and no code. Open
+this page twice, once on the classroom projector and once on your own phone. The tools are used during the
+session, not read before it.</p>
+
+<nav class="level-picker" aria-label="Section">
+  <ul>
+    <li><a href="#day1" data-day="day1" class="active">Day 1: See</a></li>
+    <li><a href="#day2" data-day="day2">Day 2: Wear</a></li>
+    <li><a href="#day3" data-day="day3">Day 3: Place &amp; Publish</a></li>
+    <li><a href="#tools" data-day="tools">Tools</a></li>
+    <li><a href="#ref" data-day="ref">Reference</a></li>
+  </ul>
+</nav>
+
+<section class="level active" id="day1">
+  <h2>Day 1: See</h2>
+  <p>A printed page becomes a trigger. The camera holds some images and loses others, and the difference can
+  be measured before anything goes to print. Day 1 produces the first artifact,
+  <strong>The Living Lookbook.</strong></p>
+
+  <h3>Sequence</h3>
+  <ol>
+    <li><a href="sim-continuum.html">The Continuum</a>. Locate the point on the continuum where a headset becomes necessary.</li>
+    <li><a href="sim-tracking.html">Trackability Scorer</a>. Score the lookbook spread before it goes to print.</li>
+    <li><a href="ar-print.html">Print to AR</a>. Attach a payload to the printed target and hold the phone on it.</li>
+    <li><a href="sim-anchors.html">Anchors, Drift and Loss</a>. Observe tracking loss and re-acquisition in slow motion.</li>
+    <li><a href="tool-storyboard.html">Storyboard</a>. Fill one four-beat sheet for each of the three artifacts.</li>
+  </ol>
+  <p><a href="worksheets.html">Worksheets</a> carry the printed sheets for every activity on this day.</p>
+
+  <h3>Leave today with</h3>
+  <ul>
+    <li>A trackability score for your own lookbook spread, and the reason behind it.</li>
+    <li>One printed target that triggers content on a phone.</li>
+    <li>A filled beat sheet for all three artifacts.</li>
+  </ul>
+</section>
+
+<section class="level" id="day2">
+  <h2>Day 2: Wear</h2>
+  <p>The camera turns around and the face becomes the surface. Face tracking reports landmarks and a mesh. It
+  reports nothing about fabric, fit or weight, which is where try-on stops being a measurement. Day 2 produces
+  the second artifact, <strong>The Brand Filter.</strong></p>
+
+  <h3>Sequence</h3>
+  <ol>
+    <li><a href="ar-face.html">Face to AR</a>. Attach objects to named landmarks on the tracked mesh.</li>
+    <li><a href="sim-tracking.html">Trackability Scorer</a>. Re-score the spread after the reshoot.</li>
+    <li><a href="tool-asset-check.html">Asset check</a>. Submit the scan of the garment and read the pass or fail.</li>
+    <li><a href="ar-place.html">Place to AR</a>. First placement of the scanned object, at true scale.</li>
+  </ol>
+
+  <h3>Leave today with</h3>
+  <ul>
+    <li>A working face effect carrying a brand idea, not a novelty.</li>
+    <li>One 3D capture of a real garment or accessory, inside budget.</li>
+    <li>A written statement of what the effect shows that a photograph cannot.</li>
+  </ul>
+</section>
+
+<section class="level" id="day3">
+  <h2>Day 3: Place &amp; Publish</h2>
+  <p>An object lands on the floor plane and holds the size it would have in the room. Day 3 fixes the
+  vocabulary used to brief a vendor, produces <strong>The Placed Product</strong>, and puts all three
+  artifacts in front of a jury.</p>
+
+  <h3>Sequence</h3>
+  <ol>
+    <li><a href="sim-anchors.html">Anchors, Drift and Loss</a>. Plane anchoring, scale and the contact shadow.</li>
+    <li><a href="tool-asset-check.html">Asset check</a>. The gate. No model is published until it passes.</li>
+    <li><a href="ar-place.html">Place to AR</a>. Final build and the jury demonstration.</li>
+    <li><a href="sim-360.html">3DoF and 6DoF</a>. Degrees of freedom, and the causes of simulator sickness.</li>
+  </ol>
+  <p><a href="worksheets.html">Worksheets</a> carries the jury scoring card.</p>
+
+  <h3>Leave today with</h3>
+  <ul>
+    <li>Three linked artifacts under one capsule idea.</li>
+    <li>A one-page spec any developer could quote against.</li>
+    <li>A written statement of what remains of the campaign once the phone is removed.</li>
+  </ul>
+</section>
+
+<section class="level" id="tools">
+  <h2>Tools</h2>
+  <p>Ten pages. Each one is self-contained, runs in the phone browser, and uploads nothing. Several are used
+  on more than one day, listed here once.</p>
+
+  <h3>Simulations</h3>
+  <table>
+    <tr><th style="width:30%">Page</th><th>What it does</th><th style="width:14%">Camera</th><th style="width:12%">Days</th></tr>
+    <tr><td><a href="sim-continuum.html">The Continuum</a><br><span class="mono">sim-continuum</span></td><td>Moves the scene from the real room to a fully virtual one. The hardware requirement changes at a fixed point on that line.</td><td>no</td><td>1</td></tr>
+    <tr><td><a href="sim-tracking.html">Trackability Scorer</a><br><span class="mono">sim-tracking</span></td><td>Scores an image for feature points and reports why a target will hold or fail.</td><td>no</td><td>1, 2</td></tr>
+    <tr><td><a href="sim-anchors.html">Anchors, Drift and Loss</a><br><span class="mono">sim-anchors</span></td><td>Runs drift, tracking loss and re-acquisition slowly enough to watch.</td><td>no</td><td>1, 3</td></tr>
+    <tr><td><a href="sim-360.html">3DoF and 6DoF</a><br><span class="mono">sim-360</span></td><td>Separates rotation from translation, and shows what produces simulator sickness.</td><td>no</td><td>3</td></tr>
+  </table>
+
+  <h3>Live AR pages</h3>
+  <table>
+    <tr><th style="width:30%">Page</th><th>What it does</th><th style="width:14%">Camera</th><th style="width:12%">Days</th></tr>
+    <tr><td><a href="ar-print.html">Print to AR</a><br><span class="mono">ar-print</span></td><td>Tracks a printed image target and plays a payload on it.</td><td><strong>rear</strong></td><td>1</td></tr>
+    <tr><td><a href="ar-face.html">Face to AR</a><br><span class="mono">ar-face</span></td><td>Fits a mesh to the face and attaches objects to named landmarks.</td><td><strong>front</strong></td><td>2</td></tr>
+    <tr><td><a href="ar-place.html">Place to AR</a><br><span class="mono">ar-place</span></td><td>Places a 3D model on the floor plane at true scale, and hands off to the phone native AR viewer.</td><td><strong>native AR</strong></td><td>2, 3</td></tr>
+  </table>
+
+  <h3>Student tools</h3>
+  <table>
+    <tr><th style="width:30%">Page</th><th>What it does</th><th style="width:14%">Camera</th><th style="width:12%">Days</th></tr>
+    <tr><td><a href="tool-storyboard.html">Storyboard</a><br><span class="mono">tool-storyboard</span></td><td>The four-beat sheet: trigger, reveal, payload, action. One per artifact.</td><td>no</td><td>1</td></tr>
+    <tr><td><a href="tool-asset-check.html">Asset check</a><br><span class="mono">tool-asset-check</span></td><td>Parses a 3D file on the device and reports it against the mobile budget.</td><td>no</td><td>2, 3</td></tr>
+    <tr><td><a href="worksheets.html">Worksheets</a><br><span class="mono">worksheets</span></td><td>Printable sheets for every activity, and the jury scoring card.</td><td>no</td><td>1, 2, 3</td></tr>
+  </table>
+</section>
+
+<section class="level" id="ref">
+  <h2>Reference</h2>
+
+  <h3>The six words</h3>
+  <p>Six words carry most technical discussion of AR. They are introduced on day one and used in the same
+  sense for the rest of the workshop.</p>
+  <table>
+    <tr><th style="width:18%">Word</th><th>What it means</th><th>Said out loud</th></tr>
+    <tr><td><strong>Trigger</strong></td><td>What starts the experience.</td><td>"The trigger is the back cover of the lookbook."</td></tr>
+    <tr><td><strong>Anchor</strong></td><td>What the content is attached to.</td><td>"Anchor it to the floor plane, not the image."</td></tr>
+    <tr><td><strong>Tracking</strong></td><td>How the system keeps up as the camera moves.</td><td>"Tracking drops when they walk past the window."</td></tr>
+    <tr><td><strong>Occlusion</strong></td><td>Real things correctly hiding virtual things.</td><td>"Without occlusion the bag floats through the table."</td></tr>
+    <tr><td><strong>Drift</strong></td><td>The anchor slowly sliding out of place.</td><td>"It drifts about a centimetre every thirty seconds."</td></tr>
+    <tr><td><strong>Payload</strong></td><td>What gets delivered: the model, the video or the sound.</td><td>"Keep the payload under ten megabytes."</td></tr>
+  </table>
+
+  <h3>The numbers</h3>
+  <table>
+    <tr><th style="width:34%">Budget</th><th>Ceiling</th></tr>
+    <tr><td>Triangles, one hero object</td><td>100,000</td></tr>
+    <tr><td>Texture resolution</td><td>2048 &times; 2048</td></tr>
+    <tr><td>Total download</td><td>10 MB</td></tr>
+    <tr><td>Time to first content</td><td>8 seconds</td></tr>
+    <tr><td>Scale</td><td>1 unit = 1 metre. Always.</td></tr>
+  </table>
+
+  <h3>File formats</h3>
+  <table>
+    <tr><th style="width:22%">Format</th><th>Where it works</th></tr>
+    <tr><td><code>.glb</code></td><td>The web, Android, and every authoring tool. The delivery format by default.</td></tr>
+    <tr><td><code>.usdz</code></td><td>iOS AR Quick Look. Export alongside, never instead.</td></tr>
+    <tr><td><code>.obj</code> / <code>.fbx</code></td><td>Working formats for handover. Not intended for delivery to a phone.</td></tr>
+  </table>
+
+  <h3>One diagnostic rule</h3>
+  <blockquote>No texture, no tracking.</blockquote>
+  <p>A blank wall gives the camera nothing to hold. So does a white studio sweep, and so does a cover with one
+  logo in the centre. The same shortage explains the dead image target, the failed room scan and the sliding
+  anchor.</p>
+
+  <h3>Running these pages</h3>
+  <p>Pages marked <em>camera</em> need <strong>HTTPS or localhost</strong>. Browsers refuse camera access on any
+  other origin. From this folder:</p>
+  <pre><code>python3 -m http.server 8000</code></pre>
+  <p>then open <code>http://localhost:8000/</code> on the machine itself, or serve the folder over your
+  classroom network and reach it by its address. See <code>README.md</code> for the offline fallback.</p>
+</section>
+
+<footer>
+  Extended Reality &middot; NIFT Fashion Communication &middot; nine hours, three artifacts, one phone.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var links = document.querySelectorAll("nav.level-picker a");
+  var panes = document.querySelectorAll("section.level");
+  function show(id) {
+    var found = false;
+    panes.forEach(function (p) {
+      var on = p.id === id;
+      p.classList.toggle("active", on);
+      if (on) found = true;
+    });
+    links.forEach(function (a) { a.classList.toggle("active", a.dataset.day === id); });
+    if (found) { try { history.replaceState(null, "", "#" + id); } catch (e) {} }
+  }
+  links.forEach(function (a) {
+    a.addEventListener("click", function (e) { e.preventDefault(); show(a.dataset.day); });
+  });
+  var h = location.hash.replace("#", "");
+  if (h) show(h);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fundamentals: Extended Reality</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   EXTENDED REALITY fundamentals deck
+   Visual language: mid-century title-sequence design.
+   Flat cut-paper shapes, one hot accent against black and white,
+   heavy condensed caps, hard rules. No gradients. No beige.
+   ============================================================ */
+
+:root{
+  --ink:#111111;
+  --ink-soft:#444444;
+  --ink-mute:#8a8a8a;
+  --paper:#ffffff;
+  --paper-2:#f2f2f2;
+  --line:#d8d8d8;
+  --line-str:#111111;
+  --accent:#e63420;        /* vermilion */
+  --accent-2:#f0a500;      /* mustard, used sparingly */
+  --accent-w:#fdecea;
+  --sans:"Archivo",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --pad-y:8vh; --pad-x:8vw;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-weight:400;
+  font-size:clamp(15px,1.55vw,20px); line-height:1.55;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+
+/* ---------- deck & slides ---------- */
+.deck{position:fixed;inset:0}
+.slide{
+  position:absolute;inset:0;display:none;
+  padding:var(--pad-y) var(--pad-x) calc(var(--pad-y) + 40px);
+  overflow:hidden;
+}
+.slide.active{display:flex;flex-direction:column;justify-content:center;animation:in .34s ease both}
+.slide.top.active{justify-content:flex-start;overflow-y:auto}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ---------- type ---------- */
+h1{
+  font-size:clamp(2.6rem,7.4vw,6rem);font-weight:900;line-height:.92;
+  letter-spacing:-.035em;text-transform:uppercase;margin:.06em 0 .3em;
+}
+h2{
+  font-size:clamp(1.5rem,3.5vw,2.7rem);font-weight:800;line-height:1.08;
+  letter-spacing:-.02em;margin:0 0 .55em;max-width:24ch;
+}
+h3{
+  font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;
+  margin:1.3em 0 .35em;color:var(--ink);
+}
+h3:first-child{margin-top:0}
+p{margin:0 0 .85em;max-width:62ch}
+p.wide{max-width:78ch}
+.lede{font-size:clamp(1rem,1.9vw,1.4rem);color:var(--ink-soft);max-width:44ch;font-weight:400}
+.meta{font-size:.76rem;text-transform:uppercase;letter-spacing:.13em;color:var(--ink-mute);font-weight:700}
+.meta.accent{color:var(--accent)}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88em;background:var(--paper-2);padding:.08em .35em;border-bottom:2px solid var(--accent)}
+em{font-style:normal;color:var(--accent)}
+strong{font-weight:800}
+ul{margin:0 0 .85em;padding-left:1.1em}
+ul li{margin-bottom:.3em}
+ul li::marker{color:var(--accent)}
+
+.kicker{
+  font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.2em;
+  color:var(--accent);margin:0 0 1.5em;display:flex;align-items:center;gap:.9em;max-width:none;
+}
+.kicker::after{content:"";flex:1;height:3px;background:var(--accent);max-width:22vw}
+
+.big{
+  font-size:clamp(1.9rem,5.4vw,4.1rem);font-weight:900;line-height:1.02;
+  letter-spacing:-.03em;text-transform:uppercase;max-width:20ch;margin:0;
+}
+.big.plain{text-transform:none;letter-spacing:-.025em}
+.big em{color:var(--accent);font-style:normal}
+
+blockquote{
+  margin:1.2em 0;padding:0 0 0 1.1em;border-left:8px solid var(--accent);
+  font-size:clamp(1.1rem,2.4vw,1.7rem);font-weight:700;line-height:1.2;letter-spacing:-.015em;max-width:30ch;
+}
+
+.rule{border:0;border-top:5px solid var(--ink);margin:1.1em 0 1.3em;width:100%}
+
+/* ---------- layout ---------- */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:2.2em}
+.cols.tight{gap:1.5em}
+
+.card{padding:1.2em 1.3em;background:var(--paper-2);border-top:5px solid var(--ink)}
+.card p:last-child{margin-bottom:0}
+.card.accent{background:var(--accent-w);border-top-color:var(--accent)}
+.card.solid{background:var(--ink);color:var(--paper);border-top-color:var(--accent)}
+.card.solid h3,.card.solid strong{color:var(--paper)}
+.card.solid em{color:var(--accent-2)}
+.card.solid .meta{color:#9a9a9a}
+.card.solid code{background:#2a2a2a;color:var(--paper)}
+
+.num{font-size:clamp(2rem,4.4vw,3.4rem);font-weight:900;line-height:1;letter-spacing:-.05em;color:var(--accent)}
+.numlabel{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-mute);margin-bottom:.7em}
+
+/* ---------- tables ---------- */
+table{border-collapse:collapse;width:100%;margin:.4em 0 1em;font-size:.92em}
+th{
+  text-align:left;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;
+  padding:.5em .8em .5em 0;border-bottom:3px solid var(--ink);color:var(--ink);
+}
+td{padding:.55em .8em .55em 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.ruled td:first-child{white-space:normal}
+tr:last-child td{border-bottom:1px solid var(--line)}
+
+/* ---------- pills & steps ---------- */
+.pill{
+  display:inline-block;font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.13em;
+  padding:.35em .7em;border:2px solid var(--ink);margin:0 .4em .4em 0;
+}
+.pill.solid{background:var(--accent);border-color:var(--accent);color:#fff}
+.pill.grey{border-color:var(--line);color:var(--ink-mute)}
+
+/* ---------- links out to the tool pages ---------- */
+a.toollink{position:relative;z-index:30;color:inherit;text-decoration:none;border-bottom:3px solid var(--accent);padding-bottom:1px}
+a.toollink:hover{background:var(--accent);color:var(--paper)}
+a.toollink code{background:none;padding:0;border-bottom:0}
+a.toollink:hover code{color:var(--paper)}
+a.pill.link{position:relative;z-index:30;text-decoration:none;color:var(--ink);border-color:var(--ink)}
+a.pill.link:hover{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+
+.steps{list-style:none;counter-reset:s;margin:0 0 .9em;padding:0;max-width:72ch}
+.steps li{counter-increment:s;position:relative;padding-left:2.4em;margin-bottom:.6em}
+.steps li::before{
+  content:counter(s,decimal-leading-zero);position:absolute;left:0;top:.06em;
+  font-size:.78rem;font-weight:900;letter-spacing:.04em;color:var(--accent);
+}
+
+/* ---------- figures ---------- */
+.fig{margin:1.1em 0 .9em;max-width:100%}
+.fig svg{width:100%;height:auto;max-height:36vh;display:block}
+.figcap{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--ink-mute);font-weight:700;margin-top:.6em}
+
+/* ---------- divider slides ---------- */
+.slide.divider{background:var(--ink);color:var(--paper)}
+.slide.divider h1{color:var(--paper)}
+.slide.divider h1::after{content:"";display:block;width:.5em;height:.14em;background:var(--accent);margin-top:.22em}
+.slide.divider .kicker{color:var(--accent-2)}
+.slide.divider .kicker::after{background:var(--accent-2)}
+.slide.divider .meta{color:#9a9a9a}
+.slide.divider .rule{border-top-color:var(--accent)}
+
+/* ---------- chrome ---------- */
+.progress{position:fixed;top:0;left:0;height:5px;background:var(--accent);width:0;z-index:40;transition:width .25s ease}
+.chrome{
+  position:fixed;left:0;right:0;bottom:0;height:40px;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pad-x);border-top:1px solid var(--line);background:var(--paper);
+  font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--ink-mute);
+}
+.chrome .right{display:flex;align-items:center;gap:1.1em}
+.chrome button{
+  font:inherit;background:none;border:0;color:var(--ink-mute);cursor:pointer;padding:0;
+  letter-spacing:.14em;text-transform:uppercase;
+}
+.chrome button:hover{color:var(--accent)}
+#clock{font-variant-numeric:tabular-nums;color:var(--ink-mute)}
+#clock.run{color:var(--accent)}
+body.dark .chrome{background:var(--ink);border-top-color:#333}
+body.dark .chrome,body.dark .chrome button{color:#7a7a7a}
+
+/* ---------- overview ---------- */
+.overview{position:fixed;inset:0;background:var(--paper);z-index:60;display:none;overflow-y:auto;padding:5vh 5vw}
+.overview.on{display:block}
+.ovgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7em;margin-top:1.4em}
+.ovcell{
+  border:2px solid var(--line);padding:.6em .7em;cursor:pointer;background:var(--paper);
+  font-size:.72rem;line-height:1.3;
+}
+.ovcell:hover{border-color:var(--accent)}
+.ovcell.cur{border-color:var(--accent);background:var(--accent);color:#fff}
+.ovcell .n{font-weight:900;font-size:.66rem;letter-spacing:.1em;color:var(--accent);display:block;margin-bottom:.25em}
+.ovcell.cur .n{color:#fff}
+.ovcell .s{display:block;font-size:.6rem;text-transform:uppercase;letter-spacing:.11em;color:var(--ink-mute);margin-top:.3em}
+.ovcell.cur .s{color:#ffd9d3}
+
+/* ---------- help ---------- */
+.help{position:fixed;inset:0;background:rgba(17,17,17,.94);color:var(--paper);z-index:70;display:none;align-items:center;justify-content:center}
+.help.on{display:flex}
+.help-inner{max-width:520px;padding:2em}
+.help h2{color:var(--paper)}
+.help table td{border-bottom-color:#333;color:#d8d8d8}
+kbd{
+  display:inline-block;font:inherit;font-size:.72rem;font-weight:800;padding:.2em .55em;
+  border:2px solid #555;margin-right:.3em;
+}
+
+/* ---------- touch zones ---------- */
+.tap{position:fixed;top:0;bottom:40px;width:16vw;z-index:20;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.tap.prev{left:0}.tap.next{right:0}
+@media (hover:hover){.tap{display:none}}
+
+/* ---------- small screens ---------- */
+@media (max-width:640px){
+  :root{--pad-y:5vh;--pad-x:6vw}
+  .cols{grid-template-columns:1fr;gap:1.2em}
+  .slide{overflow-y:auto}
+  .slide.active{justify-content:flex-start}
+  .fig svg{max-height:28vh}
+  table{font-size:.84em}
+}
+
+/* ---------- print: one slide per page ---------- */
+@media print{
+  @page{size:landscape;margin:12mm}
+  html,body{height:auto;overflow:visible;font-size:11pt}
+  .chrome,.progress,.overview,.help,.tap{display:none!important}
+  .deck{position:static}
+  .slide{
+    position:static!important;display:block!important;page-break-after:always;
+    break-after:page;padding:0 0 10mm;min-height:0;animation:none;overflow:visible;
+  }
+  .slide.divider{background:#fff!important;color:#000!important;border-top:5pt solid #000;padding-top:6mm}
+  .slide.divider h1,.slide.divider .meta{color:#000!important}
+  .card.solid{background:#fff!important;color:#000!important;border:1pt solid #000}
+  .card.solid h3,.card.solid .meta,.card.solid strong{color:#000!important}
+  .fig svg{max-height:none}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+<!-- ============ 00 OPENING ============ -->
+
+<section class="slide" data-sec="Opening" data-title="Title">
+  <p class="kicker">NIFT &middot; Fashion Communication &middot; Preliminary session</p>
+  <h1>Fundamentals</h1>
+  <p class="lede">Definitions, technology stack and current constraints of extended reality.</p>
+  <hr class="rule" style="max-width:420px">
+</section>
+
+<section class="slide top" data-sec="Opening" data-title="Scope of the session">
+  <p class="kicker">Scope</p>
+  <h2>Scope of this session</h2>
+  <p class="wide">This session defines the terms used in the workshop that follows. The terms come from the
+  literature on the metaverse and on spatial computing. Most of them describe technical conditions rather
+  than products, and they are used here in that sense.</p>
+  <p class="wide">The session covers four areas: the definition of the metaverse and its properties, the
+  four-layer technology stack, the platform record from 2003 onward, and the constraints that remain
+  unresolved. The workshop that follows works within one layer of the stack, on phone hardware.</p>
+</section>
+
+<!-- ============ 01 DEFINITIONS ============ -->
+
+<section class="slide divider" data-sec="Definitions" data-title="Divider: Definitions">
+  <p class="kicker">Section one</p>
+  <h1>Definitions</h1>
+  <p class="meta">The term, its properties, and its boundaries</p>
+</section>
+
+<section class="slide top" data-sec="Definitions" data-title="Definition">
+  <p class="kicker">Definition</p>
+  <h2>Definition of the metaverse</h2>
+  <p class="wide">The metaverse is the convergence of persistent virtual worlds, augmented reality and the
+  internet into shared three-dimensional space. It is not a single platform and it has no single operator.</p>
+  <p class="wide">The difference from earlier media is in the interface. A website is navigated by clicking
+  between pages. A three-dimensional environment is navigated by movement, and the position of a user within
+  it carries information. Two users adjacent in a space have a spatial relationship that two users listed in
+  a feed do not have.</p>
+</section>
+
+<section class="slide top" data-sec="Definitions" data-title="Six properties">
+  <p class="kicker">Properties</p>
+  <h2>Six defining properties</h2>
+  <div class="cols tight" style="margin-top:1em">
+    <div class="card">
+      <div class="numlabel">01</div><h3>Persistence</h3>
+      <p>The environment continues to run after a user leaves. Changes made to it remain in place.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">02</div><h3>Synchronous presence</h3>
+      <p>Multiple users occupy the environment at the same time and observe each other act.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">03</div><h3>Embodied interaction</h3>
+      <p>Each user is represented by an avatar. Distance, orientation and gesture carry information.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">04</div><h3>User-generated content</h3>
+      <p>Users build and modify the environment. The platform supplies the environment, not the contents.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">05</div><h3>Economic activity</h3>
+      <p>Goods are produced, priced and sold, and value is exchanged with currency outside the environment.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">06</div><h3>Identity continuity</h3>
+      <p>The avatar and its possessions persist across sessions, and in principle across platforms.</p>
+    </div>
+  </div>
+  <p class="meta" style="margin-top:1.2em">Most current platforms satisfy the first five properties. The
+  sixth is not satisfied by any of them.</p>
+</section>
+
+<section class="slide top" data-sec="Definitions" data-title="Persistent and session-based">
+  <p class="kicker">World models</p>
+  <h2>Persistent and session-based worlds</h2>
+  <table class="ruled">
+    <tr><th style="width:28%">Condition</th><th>Persistent world</th><th>Session-based world</th></tr>
+    <tr><td>State on exit</td><td>Stored and carried forward</td><td>Discarded at the end of the session</td></tr>
+    <tr><td>Form a brand can take</td><td>A structure that remains in place and accumulates visitors</td><td>An event that runs for a scheduled period</td></tr>
+    <tr><td>Operating cost</td><td>Servers and moderation running continuously</td><td>Capacity only while the session is live</td></tr>
+    <tr><td>Design consequence</td><td>Accumulation, wear and clutter must be planned for</td><td>The opening sequence carries the whole idea</td></tr>
+  </table>
+  <p class="wide">The distinction affects the brief and the budget. A release inside a session-based world is
+  scheduled and costed as an event. A presence inside a persistent world is costed as continuous operation.</p>
+</section>
+
+<section class="slide top" data-sec="Definitions" data-title="Distinctions">
+  <p class="kicker">Boundaries</p>
+  <h2>Distinctions from adjacent media</h2>
+  <table class="ruled">
+    <tr><th style="width:24%">Compared with</th><th>The difference that matters</th></tr>
+    <tr><td>A website</td><td>A site is navigated by clicking between pages. An environment is navigated by movement, and the route taken forms part of the communication.</td></tr>
+    <tr><td>A video game</td><td>A game defines an objective and measures progress against it. A world defines no objective, and open-ended activity is the intended use.</td></tr>
+    <tr><td>Social media</td><td>A feed ranks and delivers content to a user. An environment places users together, where attention is held by co-presence rather than by scrolling.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 02 STACK ============ -->
+
+<section class="slide divider" data-sec="Stack" data-title="Divider: Technology stack">
+  <p class="kicker">Section two</p>
+  <h1>Technology<br>stack</h1>
+  <p class="meta">Four layers, and the layer this workshop uses</p>
+</section>
+
+<section class="slide top" data-sec="Stack" data-title="Four layers">
+  <p class="kicker">Architecture</p>
+  <h2>The four-layer stack</h2>
+  <div class="cols tight" style="margin-top:1em">
+    <div class="card">
+      <div class="numlabel">Layer 1</div><h3>3D engine</h3>
+      <p>Unreal, Unity or a proprietary engine. It renders the frame and runs the physics. The platform
+      selects it, not the client.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">Layer 2</div><h3>Networking</h3>
+      <p>It maintains one shared state across many users. Failures at this layer appear as lag, as position
+      corrections, or as an object in two places.</p>
+    </div>
+    <div class="card">
+      <div class="numlabel">Layer 3</div><h3>Avatar and identity</h3>
+      <p>The user representation, the possessions attached to it and the garments applied to it. Fashion
+      products are sold into this layer.</p>
+    </div>
+    <div class="card solid">
+      <div class="numlabel">Layer 4</div><h3>Spatial computing</h3>
+      <p>The connection to the physical room: tracking, plane detection, face tracking, occlusion.
+      <em>The workshop operates in this layer.</em></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide top" data-sec="Stack" data-title="Delivery modes">
+  <p class="kicker">Delivery</p>
+  <h2>Spatial computing and its delivery modes</h2>
+  <p class="wide">Spatial computing is a computer maintaining a model of the space around it. It records the
+  position of surfaces, of the user and of objects placed by the user. The capability is delivered in three
+  modes.</p>
+  <table class="ruled">
+    <tr><th style="width:22%">Mode</th><th>What the user sees</th><th style="width:26%">Hardware available here</th></tr>
+    <tr><td><strong>AR</strong></td><td>The physical room, with content registered to it</td><td>Every phone in the room</td></tr>
+    <tr><td><strong>MR</strong></td><td>The physical room, with content that responds to its geometry</td><td>Headsets with passthrough</td></tr>
+    <tr><td><strong>VR</strong></td><td>A replacement environment, with the physical room removed</td><td>None. Covered as literacy</td></tr>
+  </table>
+  <p class="meta">The workshop builds in the first mode. The third is covered in theory only.</p>
+</section>
+
+<section class="slide top" data-sec="Stack" data-title="Interoperability">
+  <p class="kicker">Open problem</p>
+  <h2>Interoperability</h2>
+  <p class="wide">Standards exist for the file format. Standards do not exist for ownership records, for
+  economies or for rendering rules. An asset therefore transfers between platforms as geometry, without the
+  rights and the behaviour attached to it. A garment purchased in one world does not appear in the next.</p>
+  <table class="ruled">
+    <tr><th style="width:26%">Standard</th><th>What it defines</th><th style="width:22%">Status</th></tr>
+    <tr><td><code>glTF</code> / <code>.glb</code></td><td>Geometry, materials and animation. The transport format for the web</td><td>In use, widely adopted</td></tr>
+    <tr><td><code>VRM</code></td><td>A humanoid avatar with a defined skeleton and expression set</td><td>In use within a narrow band</td></tr>
+    <tr><td><code>OpenXR</code></td><td>A single interface between an application and headset hardware</td><td>Adopted by most headset manufacturers</td></tr>
+    <tr><td>Metaverse Standards Forum</td><td>Coordination between the parties who would have to agree</td><td>Convening. Not binding</td></tr>
+  </table>
+  <p class="wide">Of these, students use <code>.glb</code> directly. Every model produced in the workshop is
+  exported to that format.</p>
+</section>
+
+<!-- ============ 03 RECORD ============ -->
+
+<section class="slide divider" data-sec="Record" data-title="Divider: Platform record">
+  <p class="kicker">Section three</p>
+  <h1>Platform<br>record</h1>
+  <p class="meta">Two decades of platforms, and the constraints that remain</p>
+</section>
+
+<section class="slide top" data-sec="Record" data-title="Platform history">
+  <p class="kicker">History</p>
+  <h2>Platform history, 2003 to 2024</h2>
+  <table class="ruled">
+    <tr><th style="width:26%">Platform</th><th>What it established</th></tr>
+    <tr><td>Second Life, 2003</td><td>That residents produce the contents themselves, and that an internal economy can be converted to national currency</td></tr>
+    <tr><td>Minecraft, 2011</td><td>That a modifiable environment retains users for longer than a finished one</td></tr>
+    <tr><td>Roblox, 2006 onward</td><td>That the creator base can consist largely of children, and that the platform functions as a marketplace</td></tr>
+    <tr><td>Fortnite, 2017 onward</td><td>That concerts and garment sales can run inside a session-based world at large scale</td></tr>
+    <tr><td>VRChat, 2014</td><td>That social presence, rather than rendering quality, determines retention in a headset</td></tr>
+    <tr><td>Apple Vision Pro, 2024</td><td>That passthrough mixed reality is manufacturable, at a price that restricts the audience</td></tr>
+  </table>
+</section>
+
+<section class="slide top" data-sec="Record" data-title="Investment cycle">
+  <p class="kicker">2021 to 2023</p>
+  <h2>The investment cycle and the technical record</h2>
+  <p class="wide">Investment during this period was made on the expectation of a single shared world with a
+  single economy. That expectation was not met and funding was withdrawn. The withdrawal received most of
+  the reporting.</p>
+  <p class="wide">Over the same period, tracking accuracy improved, headset mass decreased, passthrough
+  reached production, and web-delivered augmented reality became reliable on mid-range phones. Investment
+  and technical capability moved independently. Treating one as a measure of the other is a common error in
+  briefing documents.</p>
+</section>
+
+<section class="slide top" data-sec="Record" data-title="Current constraints">
+  <p class="kicker">Constraints</p>
+  <h2>Current technical constraints</h2>
+  <ul class="steps">
+    <li><strong>Comfort.</strong> Simulator sickness occurs wherever visual motion is presented that the vestibular system does not report.</li>
+    <li><strong>Identity across platforms.</strong> No account carries an avatar and its possessions between worlds.</li>
+    <li><strong>Bandwidth.</strong> High-fidelity shared space requires throughput and latency that most connections do not provide.</li>
+    <li><strong>Moderation.</strong> Conduct in a live environment is harder to review than a post, and the effect on other users is immediate.</li>
+    <li><strong>Economics.</strong> Virtual goods retain value only while the platform retains users.</li>
+    <li><strong>Hardware access.</strong> Headsets remain a minority device. Phones do not.</li>
+  </ul>
+  <p class="wide">The last constraint determines the format of this workshop. The phone-only requirement
+  follows from the current distribution of hardware, not from the teaching method.</p>
+</section>
+
+<!-- ============ 04 SCOPE ============ -->
+
+<section class="slide top" data-sec="Workshop" data-title="Scope of the workshop">
+  <p class="kicker">Workshop</p>
+  <h2>Scope of the workshop</h2>
+  <p class="wide">Of the material defined in this session, the workshop uses layer four, delivered as
+  augmented reality, in a phone browser, with assets transported as <code>.glb</code>. Persistence, avatar
+  economies and interoperability are covered as reading. They set the terms against which a vendor quotes.</p>
+  <p class="wide">The course deck begins with a printed page, because a printed page can be tracked by a
+  phone camera.</p>
+  <p style="margin-top:1.4em">
+    <a class="pill link" href="deck.html" target="_blank">Course deck</a>
+    <a class="pill link" href="sim-continuum.html" target="_blank">sim-continuum</a>
+    <a class="pill link" href="index.html" target="_blank">Handbook</a>
+  </p>
+</section>
+
+<section class="slide top" data-sec="Workshop" data-title="Sources">
+  <p class="kicker">Sources</p>
+  <h2>Sources</h2>
+  <p class="wide">Two reference pages carry the extended version of this material, with the definitions
+  written out and the platform record in full.</p>
+  <ul>
+    <li><a class="toollink" href="https://eth.poetics.studio/metaverse-basics.html" target="_blank" rel="noopener">Metaverse Basics</a>, on the six properties and the comparisons with adjacent media.</li>
+    <li><a class="toollink" href="https://eth.poetics.studio/metaverse-fundamentals.html" target="_blank" rel="noopener">Metaverse Fundamentals</a>, on the stack, interoperability and the platform record.</li>
+  </ul>
+  <hr class="rule" style="max-width:420px">
+  <p class="wide">The terminology is not settled. Several of these definitions are under revision, and the
+  standards listed above are still in negotiation.</p>
+</section>
+
+</div><!-- /deck -->
+
+<div class="tap prev" id="tapPrev" aria-hidden="true"></div>
+<div class="tap next" id="tapNext" aria-hidden="true"></div>
+
+<div class="chrome">
+  <span class="sec" id="sec">Opening</span>
+  <span class="right">
+    <button id="btnOv" title="Overview (O)">Overview</button>
+    <button id="btnFs" title="Fullscreen (F)">Full screen</button>
+    <button id="btnClock" title="Instructor timer (T)"><span id="clock">00:00</span></button>
+    <button id="btnHelp" title="Keys (?)">Keys</button>
+    <span id="count">1 / 1</span>
+  </span>
+</div>
+
+<div class="overview" id="overview" role="dialog" aria-label="Slide overview">
+  <p class="kicker">Overview</p>
+  <h2>Jump to any slide.</h2>
+  <p class="meta">Click a slide, or press <strong>O</strong> / <strong>Esc</strong> to close.</p>
+  <div class="ovgrid" id="ovgrid"></div>
+</div>
+
+<div class="help" id="help" role="dialog" aria-label="Keyboard shortcuts">
+  <div class="help-inner">
+    <p class="kicker">Controls</p>
+    <h2>Running the deck.</h2>
+    <table>
+      <tr><td><kbd>&rarr;</kbd><kbd>&larr;</kbd></td><td>Next / previous slide</td></tr>
+      <tr><td><kbd>Space</kbd></td><td>Next slide</td></tr>
+      <tr><td><kbd>Home</kbd><kbd>End</kbd></td><td>First / last slide</td></tr>
+      <tr><td><kbd>O</kbd></td><td>Overview grid</td></tr>
+      <tr><td><kbd>F</kbd></td><td>Full screen</td></tr>
+      <tr><td><kbd>T</kbd></td><td>Start / pause instructor timer</td></tr>
+      <tr><td><kbd>R</kbd></td><td>Reset timer</td></tr>
+      <tr><td><kbd>P</kbd></td><td>Print, one slide per page</td></tr>
+      <tr><td><kbd>?</kbd><kbd>Esc</kbd></td><td>This panel / close</td></tr>
+    </table>
+    <p class="meta">On a phone: tap the left or right edge of the screen.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var deck = document.getElementById("deck");
+  var bar = document.getElementById("progress");
+  var secEl = document.getElementById("sec");
+  var countEl = document.getElementById("count");
+  var ov = document.getElementById("overview");
+  var ovgrid = document.getElementById("ovgrid");
+  var help = document.getElementById("help");
+  var clockEl = document.getElementById("clock");
+  var i = 0;
+
+  /* ---- restore position ---- */
+  try {
+    var saved = parseInt(localStorage.getItem("xr-fund-slide"), 10);
+    if (!isNaN(saved) && saved >= 0 && saved < slides.length) i = saved;
+  } catch (e) {}
+  if (location.hash) {
+    var h = parseInt(location.hash.replace("#s", ""), 10);
+    if (!isNaN(h) && h >= 1 && h <= slides.length) i = h - 1;
+  }
+
+  function show(n, push){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle("active", k === i); });
+    var s = slides[i];
+    document.body.classList.toggle("dark", s.classList.contains("divider"));
+    secEl.textContent = s.getAttribute("data-sec") || "";
+    countEl.textContent = (i + 1) + " / " + slides.length;
+    bar.style.width = ((i + 1) / slides.length * 100) + "%";
+    if (push !== false) history.replaceState(null, "", "#s" + (i + 1));
+    try { localStorage.setItem("xr-fund-slide", String(i)); } catch (e) {}
+    Array.prototype.forEach.call(ovgrid.children, function(c, k){
+      c.classList.toggle("cur", k === i);
+    });
+    s.scrollTop = 0;
+  }
+
+  function next(){ show(i + 1); }
+  function prev(){ show(i - 1); }
+
+  /* ---- overview ---- */
+  slides.forEach(function(s, k){
+    var c = document.createElement("div");
+    c.className = "ovcell";
+    c.innerHTML = '<span class="n">' + String(k + 1).padStart(2, "0") + '</span>' +
+                  (s.getAttribute("data-title") || "Slide") +
+                  '<span class="s">' + (s.getAttribute("data-sec") || "") + '</span>';
+    c.addEventListener("click", function(){ toggleOv(false); show(k); });
+    ovgrid.appendChild(c);
+  });
+  function toggleOv(on){
+    if (on === undefined) on = !ov.classList.contains("on");
+    ov.classList.toggle("on", on);
+    if (on) { help.classList.remove("on"); var cur = ovgrid.children[i]; if (cur) cur.scrollIntoView({block:"center"}); }
+  }
+  function toggleHelp(on){
+    if (on === undefined) on = !help.classList.contains("on");
+    help.classList.toggle("on", on);
+    if (on) ov.classList.remove("on");
+  }
+
+  /* ---- instructor timer ---- */
+  var t = 0, tick = null;
+  function paint(){
+    var m = Math.floor(t / 60), s = t % 60;
+    clockEl.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function toggleClock(){
+    if (tick) { clearInterval(tick); tick = null; clockEl.classList.remove("run"); }
+    else { tick = setInterval(function(){ t++; paint(); }, 1000); clockEl.classList.add("run"); }
+  }
+  function resetClock(){ t = 0; paint(); }
+
+  /* ---- fullscreen ---- */
+  function fs(){
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+
+  /* ---- input ---- */
+  document.addEventListener("keydown", function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === "Escape") { toggleOv(false); toggleHelp(false); return; }
+    if (k === "ArrowRight" || k === "PageDown" || k === " ") { e.preventDefault(); next(); }
+    else if (k === "ArrowLeft" || k === "PageUp") { e.preventDefault(); prev(); }
+    else if (k === "Home") { e.preventDefault(); show(0); }
+    else if (k === "End") { e.preventDefault(); show(slides.length - 1); }
+    else if (k === "ArrowDown") { var s = slides[i]; if (s.scrollHeight <= s.clientHeight) { e.preventDefault(); next(); } }
+    else if (k === "ArrowUp") { var u = slides[i]; if (u.scrollHeight <= u.clientHeight) { e.preventDefault(); prev(); } }
+    else if (k === "o" || k === "O") toggleOv();
+    else if (k === "f" || k === "F") fs();
+    else if (k === "t" || k === "T") toggleClock();
+    else if (k === "r" || k === "R") resetClock();
+    else if (k === "p" || k === "P") window.print();
+    else if (k === "?" || k === "/") toggleHelp();
+  });
+
+  document.getElementById("tapNext").addEventListener("click", next);
+  document.getElementById("tapPrev").addEventListener("click", prev);
+  document.getElementById("btnOv").addEventListener("click", function(){ toggleOv(); });
+  document.getElementById("btnFs").addEventListener("click", fs);
+  document.getElementById("btnClock").addEventListener("click", toggleClock);
+  document.getElementById("btnHelp").addEventListener("click", function(){ toggleHelp(); });
+  ov.addEventListener("click", function(e){ if (e.target === ov) toggleOv(false); });
+  help.addEventListener("click", function(){ toggleHelp(false); });
+
+  /* swipe */
+  var x0 = null, y0 = null;
+  deck.addEventListener("touchstart", function(e){ x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, {passive:true});
+  deck.addEventListener("touchend", function(e){
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) { dx < 0 ? next() : prev(); }
+    x0 = y0 = null;
+  }, {passive:true});
+
+  paint();
+  show(i, false);
+  window.addEventListener("beforeprint", function(){ slides.forEach(function(s){ s.classList.add("active"); }); });
+  window.addEventListener("afterprint", function(){ show(i, false); });
+})();
+</script>
+</body>
+</html>

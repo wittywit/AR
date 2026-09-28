@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trackability Scorer: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Trackability Scorer</h1>
+<p class="subtitle">Assess a page for trackability before committing it to print.</p>
+
+<p>The camera does not see your artwork. It sees corners, points where the image changes sharply in
+two directions at once. This tool finds exactly those points, the same way a tracking library does, and
+tells you whether there are enough of them, spread widely enough, and different enough from each other.</p>
+
+<div class="panel noprint">
+  <h3>Give it an image</h3>
+  <label for="f">Your own file. Nothing is uploaded, and it never leaves this phone.</label>
+  <input type="file" id="f" accept="image/*">
+  <p class="mono" style="margin-top:14px">or try a built-in case:</p>
+  <button data-demo="minimal">Minimal cover</button>
+  <button data-demo="repeat">Repeating pattern</button>
+  <button data-demo="gradient">Soft gradient</button>
+  <button data-demo="collage">Dense collage</button>
+  <button data-demo="texture">Textured print</button>
+</div>
+
+<div class="row">
+  <div>
+    <h3 class="mono">What you designed</h3>
+    <canvas id="src" width="420" height="420"></canvas>
+  </div>
+  <div>
+    <h3 class="mono">What the camera holds on to</h3>
+    <canvas id="ovl" width="420" height="420"></canvas>
+  </div>
+</div>
+
+<div class="panel">
+  <h3 id="verdict">Waiting for an image</h3>
+  <p id="line">Load a file or pick a built-in case above.</p>
+
+  <div id="metrics"></div>
+
+  <table id="tbl" style="display:none">
+    <tr><th style="width:26%">Measure</th><th style="width:14%">Value</th><th>What it means</th></tr>
+    <tr><td>Feature points</td><td id="m1v"></td><td id="m1t"></td></tr>
+    <tr><td>Spread</td><td id="m2v"></td><td id="m2t"></td></tr>
+    <tr><td>Contrast</td><td id="m3v"></td><td id="m3t"></td></tr>
+    <tr><td>Uniqueness</td><td id="m4v"></td><td id="m4t"></td></tr>
+  </table>
+</div>
+
+<div class="panel noprint">
+  <label><input type="checkbox" id="grid" style="width:auto"> show the spread grid</label>
+  <button id="again" disabled>Re-score</button>
+</div>
+
+<h2>How to fix a low score</h2>
+<table>
+  <tr><th style="width:26%">The complaint</th><th>The fix, in design terms</th></tr>
+  <tr><td>Too few points</td><td>Your artwork is too clean. Add photographic texture, hand type, fabric weave, a printed grain. Empty white space is invisible to a camera.</td></tr>
+  <tr><td>Points all clustered</td><td>Everything interesting sits in the middle. Push detail towards the edges, or the tracking dies the moment a thumb covers the centre.</td></tr>
+  <tr><td>Low contrast</td><td>Tonal, whisper-quiet palettes photograph beautifully and track terribly. Keep the mood; add one hard-edged element.</td></tr>
+  <tr><td>Low uniqueness</td><td>A repeating check, stripe or monogram looks the same everywhere, so the camera cannot tell which part it is looking at. Break the repeat with one asymmetric element.</td></tr>
+</table>
+
+<blockquote>No texture, no tracking.</blockquote>
+<p>This is the whole lesson. It will also explain your failed room scan on Day 3.</p>
+
+<footer>sim-tracking &middot; Day 1, Theory 2 and Activity 2 &middot; no camera required &middot; all analysis is local</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var SRC = document.getElementById("src"), OVL = document.getElementById("ovl");
+  var sx = SRC.getContext("2d"), ox = OVL.getContext("2d");
+  var N = 420, last = null;
+
+  var el = function (id) { return document.getElementById(id); };
+
+  /* ---------- built-in cases ---------- */
+  function demo(kind) {
+    var g = sx; g.save(); g.fillStyle = "#fff"; g.fillRect(0, 0, N, N);
+    var i, j;
+    if (kind === "minimal") {
+      g.fillStyle = "#111"; g.font = "600 30px Georgia"; g.textAlign = "center";
+      g.fillText("MAISON", N / 2, N / 2 - 4);
+      g.font = "italic 14px Georgia"; g.fillText("autumn winter", N / 2, N / 2 + 22);
+      g.strokeStyle = "#111"; g.lineWidth = 1; g.strokeRect(N * 0.5 - 90, N * 0.5 - 44, 180, 80);
+    } else if (kind === "repeat") {
+      for (i = 0; i < 14; i++) for (j = 0; j < 14; j++) {
+        g.fillStyle = (i + j) % 2 ? "#111" : "#fff";
+        g.fillRect(i * N / 14, j * N / 14, N / 14, N / 14);
+      }
+    } else if (kind === "gradient") {
+      var grd = g.createLinearGradient(0, 0, N, N);
+      grd.addColorStop(0, "#e9e9e9"); grd.addColorStop(1, "#9a9a9a");
+      g.fillStyle = grd; g.fillRect(0, 0, N, N);
+    } else if (kind === "collage") {
+      for (i = 0; i < 26; i++) {
+        g.save();
+        g.translate(Math.random() * N, Math.random() * N);
+        g.rotate((Math.random() - 0.5) * 1.1);
+        g.fillStyle = Math.random() > 0.5 ? "#111" : "#d0d0d0";
+        var w = 30 + Math.random() * 90, h = 20 + Math.random() * 70;
+        g.fillRect(-w / 2, -h / 2, w, h);
+        g.restore();
+      }
+      g.fillStyle = "#fff"; g.font = "700 26px Georgia";
+      g.fillText("CAPSULE 04", 24, N - 30);
+    } else {
+      // textured print: woven ground + one strong asymmetric mark
+      var img = g.createImageData(N, N), d = img.data;
+      for (i = 0; i < N * N; i++) {
+        var px = i % N, py = (i / N) | 0;
+        var weave = 128 + 46 * Math.sin(px * 0.9) * Math.sin(py * 0.9) + (Math.random() - 0.5) * 54;
+        weave = Math.max(0, Math.min(255, weave));
+        d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = weave; d[i * 4 + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      g.fillStyle = "#111";
+      g.beginPath(); g.moveTo(N * 0.62, N * 0.16); g.lineTo(N * 0.92, N * 0.34);
+      g.lineTo(N * 0.70, N * 0.46); g.closePath(); g.fill();
+      g.font = "700 22px Georgia"; g.fillText("N · IX", N * 0.10, N * 0.86);
+    }
+    g.restore();
+    analyse();
+  }
+
+  /* ---------- the analysis ---------- */
+  function analyse() {
+    var img = sx.getImageData(0, 0, N, N).data;
+    var gray = new Float32Array(N * N), i, sum = 0;
+    for (i = 0; i < N * N; i++) {
+      var v = 0.299 * img[i * 4] + 0.587 * img[i * 4 + 1] + 0.114 * img[i * 4 + 2];
+      gray[i] = v; sum += v;
+    }
+    var mean = sum / (N * N), varsum = 0;
+    for (i = 0; i < N * N; i++) { var dv = gray[i] - mean; varsum += dv * dv; }
+    var sd = Math.sqrt(varsum / (N * N));
+
+    // Sobel gradients
+    var gx = new Float32Array(N * N), gy = new Float32Array(N * N);
+    for (var y = 1; y < N - 1; y++) for (var x = 1; x < N - 1; x++) {
+      var o = y * N + x;
+      gx[o] = -gray[o - N - 1] - 2 * gray[o - 1] - gray[o + N - 1]
+            + gray[o - N + 1] + 2 * gray[o + 1] + gray[o + N + 1];
+      gy[o] = -gray[o - N - 1] - 2 * gray[o - N] - gray[o - N + 1]
+            + gray[o + N - 1] + 2 * gray[o + N] + gray[o + N + 1];
+    }
+
+    // Harris response on a coarse lattice, non-max suppressed into buckets
+    var STEP = 3, WIN = 2, K = 0.05, pts = [], resp = [];
+    for (var yy = WIN + 1; yy < N - WIN - 1; yy += STEP) {
+      for (var xx = WIN + 1; xx < N - WIN - 1; xx += STEP) {
+        var a = 0, b = 0, cc = 0;
+        for (var wy = -WIN; wy <= WIN; wy++) for (var wx = -WIN; wx <= WIN; wx++) {
+          var oo = (yy + wy) * N + (xx + wx);
+          a += gx[oo] * gx[oo]; b += gy[oo] * gy[oo]; cc += gx[oo] * gy[oo];
+        }
+        a /= 1e4; b /= 1e4; cc /= 1e4;
+        var r = (a * b - cc * cc) - K * (a + b) * (a + b);
+        if (r > 0) resp.push({ x: xx, y: yy, r: r });
+      }
+    }
+    resp.sort(function (p, q) { return q.r - p.r; });
+    var thresh = resp.length ? Math.max(resp[0].r * 0.012, 0.9) : 0;
+    var taken = {}, BUCKET = 9;
+    for (i = 0; i < resp.length && pts.length < 900; i++) {
+      if (resp[i].r < thresh) break;
+      var key = ((resp[i].y / BUCKET) | 0) * 999 + ((resp[i].x / BUCKET) | 0);
+      if (taken[key]) continue;
+      taken[key] = 1; pts.push(resp[i]);
+    }
+
+    // spread: how many cells of an 8x8 grid carry features
+    var G = 8, cells = new Array(G * G).fill(0);
+    pts.forEach(function (p) {
+      cells[((p.y / (N / G)) | 0) * G + ((p.x / (N / G)) | 0)]++;
+    });
+    var filled = cells.filter(function (v) { return v >= 2; }).length;
+    var spread = filled / (G * G);
+
+    // uniqueness: compare orientation histograms between grid cells
+    var B = 4, hists = [];
+    for (var by = 0; by < B; by++) for (var bx = 0; bx < B; bx++) {
+      var h = new Float32Array(12), tot = 0;
+      for (var py2 = (by * N / B) | 0; py2 < ((by + 1) * N / B) | 0; py2 += 2)
+        for (var px2 = (bx * N / B) | 0; px2 < ((bx + 1) * N / B) | 0; px2 += 2) {
+          var o2 = py2 * N + px2, mag = Math.hypot(gx[o2], gy[o2]);
+          if (mag < 60) continue;
+          var ang = Math.atan2(gy[o2], gx[o2]) + Math.PI;
+          h[Math.min(11, (ang / (2 * Math.PI) * 12) | 0)] += mag; tot += mag;
+        }
+      if (tot > 0) for (var k = 0; k < 12; k++) h[k] /= tot;
+      hists.push({ h: h, live: tot > 0 });
+    }
+    var simSum = 0, simN = 0;
+    for (i = 0; i < hists.length; i++) for (var j2 = i + 1; j2 < hists.length; j2++) {
+      if (!hists[i].live || !hists[j2].live) continue;
+      var dot = 0, n1 = 0, n2 = 0;
+      for (var q = 0; q < 12; q++) {
+        dot += hists[i].h[q] * hists[j2].h[q];
+        n1 += hists[i].h[q] * hists[i].h[q]; n2 += hists[j2].h[q] * hists[j2].h[q];
+      }
+      if (n1 > 0 && n2 > 0) { simSum += dot / Math.sqrt(n1 * n2); simN++; }
+    }
+    var similarity = simN ? simSum / simN : 1;
+    var uniqueness = Math.max(0, Math.min(1, (1 - similarity) * 1.9));
+
+    var density = Math.min(1, pts.length / 420);
+    var contrast = Math.min(1, sd / 58);
+
+    var score = Math.round(100 * (0.38 * density + 0.24 * spread + 0.20 * contrast + 0.18 * uniqueness));
+    last = { pts: pts, cells: cells, G: G,
+             density: density, spread: spread, contrast: contrast, uniqueness: uniqueness,
+             count: pts.length, sd: sd, score: score };
+    render();
+  }
+
+  function render() {
+    if (!last) return;
+    ox.clearRect(0, 0, N, N);
+    ox.fillStyle = "#fff"; ox.fillRect(0, 0, N, N);
+    ox.drawImage(SRC, 0, 0);
+    ox.fillStyle = "rgba(255,255,255,0.78)"; ox.fillRect(0, 0, N, N);
+
+    if (el("grid").checked) {
+      ox.strokeStyle = "rgba(0,0,0,0.30)"; ox.lineWidth = 1;
+      for (var g = 1; g < last.G; g++) {
+        ox.beginPath(); ox.moveTo(g * N / last.G, 0); ox.lineTo(g * N / last.G, N); ox.stroke();
+        ox.beginPath(); ox.moveTo(0, g * N / last.G); ox.lineTo(N, g * N / last.G); ox.stroke();
+      }
+      ox.fillStyle = "rgba(0,0,0,0.10)";
+      last.cells.forEach(function (v, idx) {
+        if (v >= 2) return;
+        ox.fillRect((idx % last.G) * N / last.G, ((idx / last.G) | 0) * N / last.G, N / last.G, N / last.G);
+      });
+    }
+
+    ox.strokeStyle = "#000"; ox.lineWidth = 1;
+    last.pts.forEach(function (p) {
+      ox.beginPath(); ox.moveTo(p.x - 3, p.y); ox.lineTo(p.x + 3, p.y);
+      ox.moveTo(p.x, p.y - 3); ox.lineTo(p.x, p.y + 3); ox.stroke();
+    });
+    ox.strokeStyle = "#000"; ox.lineWidth = 1.2; ox.strokeRect(0.5, 0.5, N - 1, N - 1);
+
+    var s = last.score, v = el("verdict"), line = el("line");
+    var band;
+    if (s >= 70) band = ["Strong target", "This will hold. Print it, light it evenly, and go."];
+    else if (s >= 50) band = ["Usable target", "It will track, but it will wobble at an angle or in poor light. Push one measure up before you commit to print."];
+    else if (s >= 30) band = ["Weak target", "It will find the target, then lose it. Expect students holding the phone dead still and calling it broken."];
+    else band = ["Dead target", "The camera has nothing to hold on to. Do not print this. Redesign, or move the trigger to a different page."];
+    v.textContent = band[0] + ": " + s + " / 100";
+    line.textContent = band[1];
+
+    el("tbl").style.display = "";
+    el("again").disabled = false;
+
+    function bar(label, val, note) {
+      return '<label>' + label + '</label><div class="bar"><span style="width:' +
+        Math.round(val * 100) + '%"></span></div><p class="mono" style="margin:0 0 10px">' + note + '</p>';
+    }
+    el("metrics").innerHTML =
+      bar("Feature points, how much there is to hold on to", last.density, last.count + " trackable points found") +
+      bar("Spread, whether they cover the whole frame", last.spread, Math.round(last.spread * 100) + "% of the frame carries features") +
+      bar("Contrast, how hard the tones change", last.contrast, "tonal range " + Math.round(last.sd)) +
+      bar("Uniqueness, whether every part looks different", last.uniqueness, last.uniqueness < 0.35 ? "strongly repetitive" : "distinguishable regions");
+
+    el("m1v").textContent = last.count;
+    el("m1t").textContent = last.count < 120 ? "Far too few. The camera cannot lock." :
+      last.count < 300 ? "Thin. It will lock, then lose it." : "Plenty.";
+    el("m2v").textContent = Math.round(last.spread * 100) + "%";
+    el("m2t").textContent = last.spread < 0.35 ? "Clustered. Cover part of it and tracking dies." :
+      last.spread < 0.6 ? "Uneven. Detail is missing from some edges." : "Well distributed.";
+    el("m3v").textContent = Math.round(last.sd);
+    el("m3t").textContent = last.sd < 26 ? "Too soft. Beautiful in print, invisible to a camera." :
+      last.sd < 45 ? "Acceptable, with good light." : "Strong tonal separation.";
+    el("m4v").textContent = Math.round(last.uniqueness * 100) + "%";
+    el("m4t").textContent = last.uniqueness < 0.35 ?
+      "Repeating. The camera cannot tell which part of the pattern it is on, so the content jumps." :
+      "Each region is distinguishable.";
+  }
+
+  /* ---------- input ---------- */
+  el("f").addEventListener("change", function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function () {
+      sx.fillStyle = "#fff"; sx.fillRect(0, 0, N, N);
+      var r = Math.min(N / im.width, N / im.height);
+      var w = im.width * r, h = im.height * r;
+      sx.drawImage(im, (N - w) / 2, (N - h) / 2, w, h);
+      URL.revokeObjectURL(url);
+      analyse();
+    };
+    im.src = url;
+  });
+  document.querySelectorAll("[data-demo]").forEach(function (b) {
+    b.addEventListener("click", function () { demo(b.dataset.demo); });
+  });
+  el("grid").addEventListener("change", render);
+  el("again").addEventListener("click", analyse);
+
+  demo("minimal");
+})();
+</script>
+</body>
+</html>

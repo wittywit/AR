@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3DoF and 6DoF: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  #view { width: 100%; max-width: 900px; touch-action: none; cursor: grab; }
+  #view:active { cursor: grabbing; }
+  .keys { font-family: var(--mono); font-size: 0.78rem; }
+  .icon { width: 1em; height: 1em; vertical-align: -0.12em; stroke: currentColor; fill: none; stroke-width: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>3DoF / 6DoF</h1>
+<p class="subtitle">The central distinction in VR, and the causes of simulator sickness.</p>
+
+<p>You will not wear a headset in this course. You still have to be able to sit in a meeting and say whether
+a proposal needs one, which kind, and what it will do to the people who try it. This is that conversation,
+made visible.</p>
+
+<canvas id="view" width="900" height="470"></canvas>
+
+<div class="panel">
+  <div class="row">
+    <div>
+      <label>Degrees of freedom</label>
+      <button id="dof3" class="on">3DoF: look only</button>
+      <button id="dof6">6DoF: look and move</button>
+    </div>
+    <div>
+      <label>Locomotion</label>
+      <button id="loco">Artificial movement: off</button>
+      <button id="vig">Vignette: off</button>
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label for="lat">Motion-to-photon latency <span class="mono" id="latv">20 ms</span></label>
+      <input type="range" id="lat" min="5" max="220" value="20">
+    </div>
+    <div>
+      <label for="fps">Frame rate <span class="mono" id="fpsv">72 fps</span></label>
+      <input type="range" id="fps" min="12" max="90" value="72">
+    </div>
+  </div>
+  <p class="keys">Drag to look &middot; arrow keys or W A S D to move &middot; tap <button id="walk" style="padding:2px 8px">Step forward</button> if you have no keyboard</p>
+  <div class="readout" id="out"></div>
+</div>
+
+<h2>What you just saw</h2>
+<table>
+  <tr><th style="width:16%"></th><th>3DoF</th><th>6DoF</th></tr>
+  <tr><td>Tracks</td><td>Rotation only: yaw, pitch, roll</td><td>Rotation and position</td></tr>
+  <tr><td>You lean in</td><td>Nothing happens. The world is painted at a fixed distance.</td><td>Near things slide past far things. That is parallax, and your body expects it.</td></tr>
+  <tr><td>Right for</td><td>360&deg; video, a runway film, a captured space you look around from one spot</td><td>Anything you walk through, reach into, or place things in</td></tr>
+  <tr><td>Cost of pretending</td><td>Selling a 360&deg; film as "a virtual store walkthrough". People notice in four seconds.</td><td>Building a 6DoF space for content that only ever needed a 360&deg; photo.</td></tr>
+</table>
+
+<h2>Why people get sick</h2>
+<p>Motion sickness in VR is a disagreement. Your eyes report motion; your inner ear reports none, or
+reports it late. The brain resolves that disagreement as poisoning, and does what it does about poisoning.</p>
+<table>
+  <tr><th style="width:30%">Cause</th><th>What to do about it</th></tr>
+  <tr><td>Latency above ~20 ms</td><td>A hardware and engine problem, not a design one. If a vendor will not state their number, that is the answer.</td></tr>
+  <tr><td>Frame rate below ~72 fps</td><td>Reduce scene complexity until the frame rate holds. The performance budget takes precedence over visual detail.</td></tr>
+  <tr><td>Artificial movement, sliding without walking</td><td>Teleport instead. Or keep the viewer seated and bring the content to them.</td></tr>
+  <tr><td>Wide field of view during motion</td><td>Vignetting reduces discomfort at low cost. The view narrows while the viewer moves and opens again when the viewer stops.</td></tr>
+  <tr><td>Rotation applied by software</td><td>Never turn the camera for someone. Let them turn their own head.</td></tr>
+  <tr><td>Position tracked but not rotation, or the reverse</td><td>A degrees-of-freedom mismatch is among the most reliable causes of discomfort. It should be resolved before release.</td></tr>
+</table>
+
+<h2>Where this touches your work</h2>
+<p>A 360&deg; capture of a store, a show, or an installation is a genuine fashion-communication deliverable and
+costs almost nothing: a phone and a tripod, or an AI-generated sky in a tool like Blockade Labs. It is
+3DoF, and that is fine. Say so in the brief. The moment someone says "and then they walk around the shop",
+the budget changes by an order of magnitude, and your job in that meeting is to be the person who says it out
+loud early.</p>
+
+<footer>sim-360 &middot; Day 3, Theory 6 &middot; no headset, no camera</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var c = document.getElementById("view"), x = c.getContext("2d");
+  var el = function (id) { return document.getElementById(id); };
+  var W = c.width, H = c.height, F = 420;
+
+  var st = {
+    dof: 3, yaw: 0, pitch: 0, px: 0, pz: 0,
+    latency: 20, fps: 72, loco: false, vig: false,
+    mismatch: 0, moving: 0, lastDraw: 0, bob: 0
+  };
+  var target = { yaw: 0, pitch: 0, px: 0, pz: 0 };
+  var queue = [];
+
+  var PILLARS = [];
+  (function () {
+    var spec = [[-3.2, 4, 0.5, 2.6], [3.0, 5.5, 0.5, 2.6], [-1.4, 9, 0.45, 2.4],
+                [2.2, 11, 0.45, 2.4], [-4.5, 14, 0.5, 2.6], [0.4, 17, 0.5, 2.6],
+                [-2.0, 22, 0.5, 2.6], [3.6, 24, 0.5, 2.6]];
+    for (var i = 0; i < spec.length; i++) {
+      PILLARS.push({ x: spec[i][0], z: spec[i][1], w: spec[i][2], h: spec[i][3], rail: i % 2 === 0 });
+    }
+  })();
+
+  function proj(wx, wy, wz) {
+    var dx = wx - st.px, dz = wz - st.pz;
+    var s = Math.sin(st.yaw), co = Math.cos(st.yaw);
+    var zc = dx * s + dz * co;
+    var xc = dx * co - dz * s;
+    if (zc < 0.25) return null;
+    return { sx: W / 2 + F * xc / zc, sy: H / 2 + F * (1.6 - wy) / zc + st.pitch * 300, z: zc };
+  }
+
+  function line(a, b) {
+    if (!a || !b) return;
+    x.beginPath(); x.moveTo(a.sx, a.sy); x.lineTo(b.sx, b.sy); x.stroke();
+  }
+
+  function draw() {
+    x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+
+    // floor grid
+    x.strokeStyle = "#cccccc"; x.lineWidth = 1;
+    for (var gz = 0; gz <= 30; gz += 2) {
+      line(proj(-14, 0, gz), proj(14, 0, gz));
+    }
+    for (var gx = -12; gx <= 12; gx += 2) {
+      line(proj(gx, 0, 0.3), proj(gx, 0, 30));
+    }
+
+    // back wall
+    x.strokeStyle = "#000"; x.lineWidth = 1.4;
+    var bl = proj(-6, 0, 29), br = proj(6, 0, 29), tl = proj(-6, 3.4, 29), tr = proj(6, 3.4, 29);
+    if (bl && br && tl && tr) {
+      x.beginPath(); x.moveTo(bl.sx, bl.sy); x.lineTo(br.sx, br.sy);
+      x.lineTo(tr.sx, tr.sy); x.lineTo(tl.sx, tl.sy); x.closePath(); x.stroke();
+      x.fillStyle = "#000";
+      var bw = proj(-1.9, 2.5, 29), bw2 = proj(1.9, 1.9, 29);
+      if (bw && bw2) {
+        x.fillRect(bw.sx, bw.sy, bw2.sx - bw.sx, bw2.sy - bw.sy);
+        x.fillStyle = "#fff";
+        x.font = "600 " + Math.max(8, (bw2.sx - bw.sx) * 0.16) + "px Georgia, serif";
+        x.textAlign = "center";
+        x.fillText("AW26", (bw.sx + bw2.sx) / 2, (bw.sy + bw2.sy) / 2 + 4);
+      }
+    }
+
+    // pillars, far to near
+    var sorted = PILLARS.slice().sort(function (a, b) { return b.z - a.z; });
+    for (var i = 0; i < sorted.length; i++) {
+      var p = sorted[i];
+      var a = proj(p.x - p.w / 2, 0, p.z), b = proj(p.x + p.w / 2, 0, p.z);
+      var t = proj(p.x - p.w / 2, p.h, p.z), u = proj(p.x + p.w / 2, p.h, p.z);
+      if (!a || !b || !t || !u) continue;
+      x.fillStyle = "#fff"; x.strokeStyle = "#000"; x.lineWidth = 1.4;
+      x.beginPath(); x.moveTo(a.sx, a.sy); x.lineTo(b.sx, b.sy);
+      x.lineTo(u.sx, u.sy); x.lineTo(t.sx, t.sy); x.closePath();
+      x.fill(); x.stroke();
+      if (p.rail) {
+        x.beginPath();
+        x.moveTo(a.sx + (b.sx - a.sx) * 0.2, a.sy + (t.sy - a.sy) * 0.55);
+        x.lineTo(a.sx + (b.sx - a.sx) * 0.8, a.sy + (t.sy - a.sy) * 0.55);
+        x.stroke();
+      }
+      // contact shadow
+      x.fillStyle = "rgba(0,0,0,0.18)";
+      x.beginPath();
+      x.ellipse((a.sx + b.sx) / 2, a.sy, Math.abs(b.sx - a.sx) * 0.62, Math.abs(b.sx - a.sx) * 0.14, 0, 0, 6.3);
+      x.fill();
+    }
+
+    if (st.vig && st.moving > 0) {
+      var g = x.createRadialGradient(W / 2, H / 2, H * 0.16, W / 2, H / 2, H * 0.62);
+      g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,0.92)");
+      x.fillStyle = g; x.fillRect(0, 0, W, H);
+    }
+
+    // HUD
+    x.fillStyle = "#000"; x.fillRect(0, 0, W, 26);
+    x.fillStyle = "#fff"; x.font = "13px 'Courier New', monospace"; x.textAlign = "left";
+    x.fillText(st.dof + "DoF   yaw " + (st.yaw * 57.3).toFixed(0) + "°   pos " +
+      st.px.toFixed(2) + ", " + st.pz.toFixed(2) + " m   latency " + st.latency +
+      " ms   " + st.fps + " fps", 10, 18);
+
+    if (st.dof === 3 && st.mismatch > 0) {
+      x.fillStyle = "#e63420";
+      x.fillRect(W / 2 - 190, H - 52, 380, 30);
+      x.fillStyle = "#fff"; x.textAlign = "center"; x.font = "13px 'Courier New', monospace";
+      x.fillText("YOU MOVED. THE WORLD DID NOT.", W / 2, H - 32);
+    }
+    x.textAlign = "left";
+  }
+
+  function comfort() {
+    var s = 100;
+    if (st.latency > 20) s -= Math.min(45, (st.latency - 20) * 0.32);
+    if (st.fps < 72) s -= Math.min(40, (72 - st.fps) * 0.85);
+    if (st.loco) s -= st.vig ? 8 : 24;
+    if (st.dof === 3 && st.mismatch > 0.5) s -= Math.min(30, st.mismatch * 9);
+    return Math.max(0, Math.round(s));
+  }
+
+  function say() {
+    var cf = comfort();
+    var verdict = cf >= 80 ? "Comfortable for most people."
+      : cf >= 60 ? "Tolerable for a few minutes. Some people will feel it."
+      : cf >= 35 ? "A meaningful share of a class will feel unwell."
+      : "Unacceptable for general audiences.";
+    var lines = [];
+    lines.push("Comfort " + cf + " / 100   ·   " + verdict);
+    if (st.latency > 20) lines.push("Latency " + st.latency + " ms is above the ~20 ms threshold. The world lags your head.");
+    if (st.fps < 72) lines.push("At " + st.fps + " fps the image judders. Cut the scene until it holds 72.");
+    if (st.loco && !st.vig) lines.push("Artificial movement at full field of view is the strongest single contributor here. Add a vignette, or use teleportation instead.");
+    if (st.loco && st.vig) lines.push("Vignette on during movement. Cheap, ugly for a second, and it works.");
+    if (st.dof === 3) {
+      lines.push(st.mismatch > 0.5
+        ? "3DoF: you tried to move and nothing moved. No parallax. This is a 360° film, not a space."
+        : "3DoF: look around all you like. Try to step forward and watch what happens.");
+    } else {
+      lines.push("6DoF: near pillars slide past the far ones as you move. That parallax is what makes a space feel like a place, and it is what needs real hardware.");
+    }
+    el("out").textContent = lines.join("\n");
+  }
+
+  // latency: queue pose samples and apply them late
+  function tick(now) {
+    queue.push({ t: now, yaw: target.yaw, pitch: target.pitch, px: target.px, pz: target.pz });
+    var cutoff = now - st.latency;
+    var use = null;
+    while (queue.length && queue[0].t <= cutoff) use = queue.shift();
+    if (use) {
+      st.yaw = use.yaw; st.pitch = use.pitch;
+      if (st.dof === 6) { st.px = use.px; st.pz = use.pz; }
+    }
+    if (queue.length > 400) queue.splice(0, queue.length - 400);
+
+    if (st.loco) { target.pz += 0.022; st.moving = 12; }
+    if (st.moving > 0) st.moving--;
+
+    var interval = 1000 / st.fps;
+    if (now - st.lastDraw >= interval) { st.lastDraw = now; draw(); }
+    requestAnimationFrame(tick);
+  }
+
+  function move(dx, dz) {
+    var s = Math.sin(st.yaw), co = Math.cos(st.yaw);
+    target.px += dx * co + dz * s;
+    target.pz += -dx * s + dz * co;
+    target.px = Math.max(-8, Math.min(8, target.px));
+    target.pz = Math.max(-6, Math.min(26, target.pz));
+    st.moving = 12;
+    if (st.dof === 3) st.mismatch = Math.min(4, st.mismatch + 0.6);
+    say();
+  }
+
+  // drag to look
+  var drag = null;
+  function down(e) { drag = { x: pt(e).x, y: pt(e).y }; }
+  function pt(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function moveL(e) {
+    if (!drag) return;
+    var p = pt(e);
+    target.yaw -= (p.x - drag.x) * 0.005;
+    target.pitch = Math.max(-0.22, Math.min(0.22, target.pitch + (p.y - drag.y) * 0.0012));
+    drag = p;
+    e.preventDefault();
+  }
+  function up() { drag = null; }
+  c.addEventListener("mousedown", down); window.addEventListener("mousemove", moveL); window.addEventListener("mouseup", up);
+  c.addEventListener("touchstart", down, { passive: true });
+  c.addEventListener("touchmove", moveL, { passive: false });
+  c.addEventListener("touchend", up);
+
+  window.addEventListener("keydown", function (e) {
+    var k = e.key.toLowerCase();
+    if (k === "arrowup" || k === "w") move(0, 0.35);
+    else if (k === "arrowdown" || k === "s") move(0, -0.35);
+    else if (k === "arrowleft" || k === "a") move(-0.3, 0);
+    else if (k === "arrowright" || k === "d") move(0.3, 0);
+    else return;
+    e.preventDefault();
+  });
+  el("walk").addEventListener("click", function () { move(0, 0.5); });
+
+  el("dof3").addEventListener("click", function () {
+    st.dof = 3; st.mismatch = 0; this.classList.add("on"); el("dof6").classList.remove("on"); say();
+  });
+  el("dof6").addEventListener("click", function () {
+    st.dof = 6; st.mismatch = 0; this.classList.add("on"); el("dof3").classList.remove("on"); say();
+  });
+  el("loco").addEventListener("click", function () {
+    st.loco = !st.loco; this.classList.toggle("on", st.loco);
+    this.textContent = "Artificial movement: " + (st.loco ? "on" : "off"); say();
+  });
+  el("vig").addEventListener("click", function () {
+    st.vig = !st.vig; this.classList.toggle("on", st.vig);
+    this.textContent = "Vignette: " + (st.vig ? "on" : "off"); say();
+  });
+  el("lat").addEventListener("input", function () {
+    st.latency = +this.value; el("latv").textContent = st.latency + " ms"; say();
+  });
+  el("fps").addEventListener("input", function () {
+    st.fps = +this.value; el("fpsv").textContent = st.fps + " fps"; say();
+  });
+
+  say();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Face to AR: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  #stage { position: fixed; inset: 0; display: none; background: var(--ink); z-index: 50; }
+  #stage.on { display: block; }
+  #stage .hud {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 60;
+    background: var(--paper); border-top: 5px solid var(--accent); padding: 8px 12px;
+    font-family: var(--mono); font-size: 0.74rem;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  #stage .hud button { margin: 0; padding: 5px 10px; }
+  #status { flex: 1 1 100%; }
+  a-scene { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Face &rarr; AR</h1>
+<p class="subtitle">The Brand Filter. Landmarks, not pixels, and the limit of try-on.</p>
+
+<p>A face tracker does not see your face. It fits a mesh of several hundred points to it, every frame, and
+hands you a set of named positions on that mesh: the forehead, the nose bridge, a cheek, the chin.
+Everything you can build is a matter of <em>which point you attach to</em>. Turn the mesh on below and you
+can watch the surface the tracker is actually fitting.</p>
+
+<p class="note">This page runs on the 8th Wall engine, which its owners released under the MIT licence when
+the hosted platform was withdrawn in February 2026. It needs no account and no build step; the engine and its
+face model are fetched from a public CDN when you press the button.</p>
+
+<div class="panel">
+  <h3>1 &middot; Choose an anchor</h3>
+  <label for="anchor">Landmark</label>
+  <select id="anchor">
+    <option value="noseBridge">noseBridge: between the eyes (eyewear, bindis, brow pieces)</option>
+    <option value="forehead">forehead: headwear, crowns, logos</option>
+    <option value="chin">chin: beards, chokers when read low</option>
+    <option value="leftCheek">leftCheek</option>
+    <option value="rightCheek">rightCheek</option>
+    <option value="noseTip">noseTip</option>
+    <option value="mouth">mouth</option>
+    <option value="leftEar">leftEar</option>
+    <option value="rightEar">rightEar</option>
+  </select>
+  <p class="note">The anchors are named, not numbered, and the names are the vocabulary to use when briefing a
+  vendor. The rigid, stable anchors are the ones that work. Anything needing the mesh to <em>deform like
+  fabric</em> is where phone try-on stops being honest.</p>
+  <label for="mesh"><input type="checkbox" id="mesh"> Draw the tracked mesh</label>
+</div>
+
+<div class="panel">
+  <h3>2 &middot; Choose a payload</h3>
+  <label for="kind">Object</label>
+  <select id="kind">
+    <option value="frames">Eyewear frames</option>
+    <option value="badge">Flat badge: your own artwork</option>
+    <option value="drop">Hanging drop (earring / pendant)</option>
+    <option value="halo">Orbiting ring</option>
+  </select>
+  <label for="art">Artwork for the badge, optional. Use a PNG with transparency.</label>
+  <input type="file" id="art" accept="image/*">
+  <label for="scale">Scale <span class="mono" id="scalev">1.00</span></label>
+  <input type="range" id="scale" min="20" max="250" value="100">
+</div>
+
+<div class="panel">
+  <h3>3 &middot; Run it</h3>
+  <p>Front camera. Needs <strong>HTTPS or localhost</strong>. The anchor, the payload and the mesh setting are
+  read when you press the button; to change them, stop and start again.</p>
+  <button id="go">Start camera</button>
+  <p class="note" id="warn"></p>
+</div>
+
+<h2>The evaluative criterion</h2>
+<blockquote>The test is whether it is opened a second time.</blockquote>
+<p>A filter that offers only novelty is opened once. A filter that carries a brand idea is reused, because it lends the wearer a
+recognisable appearance. A signature colour, a house motif, a season's silhouette.
+ The second is the design target here.</p>
+
+<h2>Where this genuinely works, and where it does not</h2>
+<table>
+  <tr><th style="width:34%">Works</th><th>Simulated, not modelled</th></tr>
+  <tr>
+    <td>Eyewear, earrings, lipstick, hair colour, headwear, nails, bindis, brow and lash work. Rigid
+    things sitting on stable landmarks.</td>
+    <td>Draped garments, fabric weight, how a kurta actually falls, how a saree pleats, fit across a real
+    body. That is cloth physics, and no phone filter is doing it.</td>
+  </tr>
+</table>
+<p>The distinction is worth stating plainly in a client meeting: phone try-on represents the <em>look</em>,
+not the <em>fit</em>.</p>
+
+<h2>Consent, in one paragraph</h2>
+<p>You are pointing a camera at a person's face. Tell people what is captured, what is kept, and what is not.
+Nothing here leaves the device. There is no upload and no server. When you brief a commercial vendor,
+ask them to state the same thing in writing, and check whether the "beauty" defaults quietly slim, lighten or
+reshape the face. Publishing that without saying so is a decision, and it is yours.</p>
+
+<footer>ar-face &middot; Day 2, Drill 2 Path A &middot; 8th Wall engine (MIT) &middot; front camera &middot; HTTPS or localhost required &middot; nothing is uploaded</footer>
+</div>
+
+<div id="stage">
+  <div class="hud">
+    <span id="status">Starting camera&hellip;</span>
+    <button id="bigger">Bigger</button>
+    <button id="smaller">Smaller</button>
+    <button id="stop">Stop</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  // A-Frame 1.5.0 is the stock build, matching ar-print.html. 8th Wall's own examples load their
+  // fork ("8frame"), but it is stored in Git LFS and no CDN serves the file, so stock A-Frame it is.
+  var CDN_AFRAME = "https://aframe.io/releases/1.5.0/aframe.min.js";
+  var CDN_ENGINE = "https://cdn.jsdelivr.net/npm/@8thwall/engine@0.1.0/dist/xr.js";
+  var CDN_XREXTRAS = "https://cdn.jsdelivr.net/npm/@8thwall/xrextras@1.0.0/dist/xrextras.js";
+  var el = function (id) { return document.getElementById(id); };
+  var artURL = null, started = false, scale = 1, entity = null, meshWrap = null;
+
+  if (!window.isSecureContext) {
+    el("warn").textContent =
+      "Not a secure origin. The browser will refuse the camera. Serve over localhost or HTTPS.";
+  }
+
+  el("art").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    artURL = URL.createObjectURL(f);
+    el("kind").value = "badge";
+    el("warn").textContent = "Badge artwork: " + f.name;
+  });
+
+  el("scale").addEventListener("input", function () {
+    scale = +this.value / 100;
+    el("scalev").textContent = scale.toFixed(2);
+    apply();
+  });
+
+  function apply() {
+    if (entity) entity.setAttribute("scale", scale + " " + scale + " " + scale);
+  }
+
+  function load(src, attrs) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      if (attrs) {
+        Object.keys(attrs).forEach(function (k) { s.setAttribute(k, attrs[k]); });
+      }
+      s.src = src; s.onload = res; s.onerror = function () { rej(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function payload(kind) {
+    if (kind === "frames") {
+      return '<a-entity position="0 0 0">' +
+        '<a-torus color="#111111" radius="0.045" radius-tubular="0.006" position="-0.055 0 0.02" rotation="0 0 0"></a-torus>' +
+        '<a-torus color="#111111" radius="0.045" radius-tubular="0.006" position="0.055 0 0.02" rotation="0 0 0"></a-torus>' +
+        '<a-box color="#111111" width="0.03" height="0.006" depth="0.006" position="0 0.01 0.02"></a-box>' +
+        '<a-box color="#111111" width="0.09" height="0.005" depth="0.005" position="-0.10 0.012 -0.01" rotation="0 22 0"></a-box>' +
+        '<a-box color="#111111" width="0.09" height="0.005" depth="0.005" position="0.10 0.012 -0.01" rotation="0 -22 0"></a-box>' +
+        '</a-entity>';
+    }
+    if (kind === "badge") {
+      return artURL
+        ? '<a-plane src="#art" transparent="true" width="0.16" height="0.16" position="0 0 0.03"></a-plane>'
+        : '<a-entity>' +
+          '<a-plane color="#111111" width="0.17" height="0.07" position="0 0 0.03"></a-plane>' +
+          '<a-text value="MAISON" align="center" color="#FFFFFF" width="0.6" position="0 0.008 0.035"></a-text>' +
+          '<a-text value="a w 2 6" align="center" color="#FFFFFF" width="0.34" position="0 -0.016 0.035"></a-text>' +
+          '</a-entity>';
+    }
+    if (kind === "drop") {
+      return '<a-entity>' +
+        '<a-cylinder color="#111111" radius="0.002" height="0.07" position="0 -0.035 0.02"></a-cylinder>' +
+        '<a-sphere color="#111111" radius="0.016" position="0 -0.078 0.02"></a-sphere>' +
+        '<a-torus color="#111111" radius="0.012" radius-tubular="0.002" position="0 0.006 0.02"></a-torus>' +
+        '</a-entity>';
+    }
+    return '<a-entity animation="property: rotation; to: 0 360 0; dur: 5000; loop: true; easing: linear">' +
+      '<a-torus color="#111111" radius="0.13" radius-tubular="0.005" rotation="78 0 0" position="0 0 0"></a-torus>' +
+      '</a-entity>';
+  }
+
+  function build() {
+    var point = el("anchor").value, kind = el("kind").value, wantMesh = el("mesh").checked;
+    var assets = artURL ? '<a-assets><img id="art" src="' + artURL + '"></a-assets>' : '<a-assets></a-assets>';
+    // The tracked mesh is drawn in mustard, not vermilion: it is a teaching overlay, not a failure state.
+    var mesh = '<a-entity id="meshwrap" visible="' + (wantMesh ? "true" : "false") + '">' +
+      '<xrextras-face-mesh material="color: #f0a500; wireframe: true; opacity: 0.9; transparent: true">' +
+      '</xrextras-face-mesh></a-entity>';
+
+    el("stage").insertAdjacentHTML("afterbegin",
+      '<a-scene embedded xrextras-almost-there xrextras-runtime-error ' +
+      'xrface="maxDetections: 1" ' +
+      'xrconfig="cameraDirection: front; mirroredDisplay: true; allowedDevices: any" ' +
+      'renderer="colorManagement: true" ' +
+      'vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">' +
+        assets +
+        '<a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>' +
+        '<a-light type="ambient" intensity="1"></a-light>' +
+        '<a-light type="directional" intensity="0.5" position="0.5 1 1"></a-light>' +
+        mesh +
+        '<xrextras-faceanchor>' +
+          '<xrextras-face-attachment point="' + point + '">' +
+            '<a-entity id="pl">' + payload(kind) + '</a-entity>' +
+          '</xrextras-face-attachment>' +
+        '</xrextras-faceanchor>' +
+      '</a-scene>');
+
+    var scene = el("stage").querySelector("a-scene");
+    entity = el("stage").querySelector("#pl");
+    meshWrap = el("stage").querySelector("#meshwrap");
+    apply();
+
+    scene.addEventListener("realityready", function () {
+      el("status").textContent = "Camera running. Look at the lens";
+    });
+    scene.addEventListener("xrfacescanning", function () {
+      el("status").textContent = "Looking for a face…";
+    });
+    scene.addEventListener("xrfacefound", function () {
+      el("status").textContent = "Face found. Anchor " + point;
+    });
+    scene.addEventListener("xrfacelost", function () {
+      el("status").textContent = "Face lost. Face the camera, and get some light on you";
+    });
+    scene.addEventListener("camera-error", function () {
+      el("status").textContent =
+        "Could not start. Check camera permission and that you are on HTTPS or localhost.";
+    });
+  }
+
+  el("go").addEventListener("click", function () {
+    if (started) return;
+    started = true; this.disabled = true; this.textContent = "Loading…";
+    el("stage").classList.add("on");
+    var self = this;
+    // Order matters: A-Frame, then the engine (async, requesting the face chunk so that xr-face.js and
+    // its model files are fetched from the same CDN path), then xrextras, which registers against AFRAME.
+    load(CDN_AFRAME)
+      .then(function () {
+        return load(CDN_ENGINE, {async: "", crossorigin: "anonymous", "data-preload-chunks": "face"});
+      })
+      .then(function () { return load(CDN_XREXTRAS, {crossorigin: "anonymous"}); })
+      .then(build)
+      .catch(function () {
+        el("status").textContent =
+          "Could not load the AR libraries. There is no network. Use the offline bundle in README §Plan B.";
+        self.disabled = false; self.textContent = "Start camera"; started = false;
+      });
+  });
+
+  el("mesh").addEventListener("change", function () {
+    if (meshWrap) meshWrap.setAttribute("visible", this.checked ? "true" : "false");
+  });
+
+  el("bigger").addEventListener("click", function () {
+    el("scale").value = Math.min(250, +el("scale").value + 10);
+    el("scale").dispatchEvent(new Event("input"));
+  });
+  el("smaller").addEventListener("click", function () {
+    el("scale").value = Math.max(20, +el("scale").value - 10);
+    el("scale").dispatchEvent(new Event("input"));
+  });
+  el("stop").addEventListener("click", function () { location.reload(); });
+})();
+</script>
+</body>
+</html>

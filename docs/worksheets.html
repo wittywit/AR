@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worksheets: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .sheet { border-top: 5px solid var(--ink); padding-top: 10px; margin-top: 46px; }
+  .sheet > h2 { margin-top: 4px; }
+  .when { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); }
+  table.fill td { padding: 0; }
+  table.fill input { border: none; margin: 0; padding: 8px 6px; width: 100%; box-sizing: border-box; font-size: 0.95rem; background: none; }
+  table.fill input:focus { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .rule { border-bottom: 2px solid var(--ink); display: inline-block; min-width: 200px; }
+  .scale { font-family: var(--mono); letter-spacing: 0.12em; }
+  .dots { font-family: var(--mono); letter-spacing: 0.9em; }
+  textarea.short { min-height: 54px; }
+  .savenote { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-mute); }
+  @media print {
+    .noprint { display: none !important; }
+    .sheet { page-break-before: always; }
+    .sheet:first-of-type { page-break-before: auto; }
+    input, textarea { border: none; border-bottom: 1px solid #000; }
+    table.fill input { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink noprint"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Worksheets</h1>
+<p class="subtitle">Everything to be filled in by hand or on screen, across the three days.</p>
+
+<p class="noprint">Type into any field and it saves to this device. Print to get the paper versions.
+one worksheet per page, ready for the room. Nothing is uploaded anywhere.</p>
+<p class="noprint"><button id="print">Print all sheets</button>
+<button id="wipe">Clear everything on this device</button>
+<span class="savenote" id="save"></span></p>
+
+<div class="sheet">
+<p class="when">Handed out Day 1</p>
+<h2>The brief &middot; XR Capsule</h2>
+<blockquote>You are the communication team for a six-piece capsule collection. Use a brand from your portfolio
+or invent one. It needs a name, a point of view, and a customer you can describe in one sentence.</blockquote>
+<p>Over three days you produce three AR artifacts. Together they must read as <strong>one campaign</strong>,
+not three exercises.</p>
+<table>
+  <tr><th style="width:26%">Artifact</th><th>What it is</th></tr>
+  <tr><td>The Living Lookbook</td><td>One printed page. Pointing a phone at it reveals the collection. The print must still work as print if nobody scans it.</td></tr>
+  <tr><td>The Brand Filter</td><td>A face or accessory effect carrying your own textile print or brand mark. One interaction, not five.</td></tr>
+  <tr><td>The Placed Product</td><td>Your hero piece, scanned on a phone, placed at true scale in a real room.</td></tr>
+  <tr><td>Plus</td><td>A 60-second case reel and a one-page campaign sheet.</td></tr>
+</table>
+<p>Teams of 2&ndash;3. Everything shot, scanned and built on your own phones.</p>
+<h3>Non-negotiables</h3>
+<ul>
+  <li>One visual system across all three artifacts. Type, colour and tone must match.</li>
+  <li>The printed page carries a legible instruction line. If a stranger cannot work out what to do in eight seconds, it has failed.</li>
+  <li>True scale on the placed product. A bag the size of a sofa fails that artifact outright.</li>
+  <li>Every AR piece tested on <strong>a phone that is not yours</strong>.</li>
+</ul>
+<h3>Our brand</h3>
+<table class="fill">
+  <tr><th style="width:26%">Name</th><td><input data-k="b.name"></td></tr>
+  <tr><th>Point of view</th><td><input data-k="b.pov"></td></tr>
+  <tr><th>Customer, one sentence</th><td><input data-k="b.cust"></td></tr>
+  <tr><th>Team</th><td><input data-k="b.team"></td></tr>
+</table>
+</div>
+
+<div class="sheet">
+<p class="when">Day 1 &middot; Activity one</p>
+<h2>XR audit</h2>
+<p>For each campaign: mark where it sits on the continuum, name the trigger, and say what it actually sells.</p>
+<table class="fill">
+  <tr><th style="width:4%">#</th><th style="width:26%">Campaign</th><th style="width:20%">Real &harr; Virtual</th><th style="width:22%">Trigger</th><th>What it actually sells</th></tr>
+  <tr><td>1</td><td>Sneaker try-on in a brand app</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a1.t"></td><td><input data-k="a1.s"></td></tr>
+  <tr><td>2</td><td>A magazine page that plays a film</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a2.t"></td><td><input data-k="a2.s"></td></tr>
+  <tr><td>3</td><td>A lens that puts sunglasses on you</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a3.t"></td><td><input data-k="a3.s"></td></tr>
+  <tr><td>4</td><td>A virtual store you walk through on a laptop</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a4.t"></td><td><input data-k="a4.s"></td></tr>
+  <tr><td>5</td><td>A shop window that reacts to passers-by</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a5.t"></td><td><input data-k="a5.s"></td></tr>
+  <tr><td>6</td><td>A 3D bag you can put on your own table</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a6.t"></td><td><input data-k="a6.s"></td></tr>
+  <tr><td>7</td><td>A runway show watched in a headset</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a7.t"></td><td><input data-k="a7.s"></td></tr>
+  <tr><td>8</td><td>A garment that only exists as a digital skin</td><td class="scale">R&middot;&middot;&middot;&middot;&middot;V</td><td><input data-k="a8.t"></td><td><input data-k="a8.s"></td></tr>
+</table>
+<p><strong>Closing question, as a pair, two sentences.</strong> Which two of these would work with no phone at
+all. For those, state what work the AR was doing.</p>
+<textarea data-k="a.close" class="short"></textarea>
+</div>
+
+<div class="sheet">
+<p class="when">Day 1 &middot; Activity two &middot; use sim-tracking</p>
+<h2>Target clinic</h2>
+<p>Run three images from your own portfolio through <a href="sim-tracking.html">sim-tracking</a>. Fix one
+weakness in each. Run it again.</p>
+<table class="fill">
+  <tr><th style="width:28%">Image</th><th style="width:12%">Score</th><th style="width:22%">Main weakness</th><th style="width:26%">Fix applied</th><th>New score</th></tr>
+  <tr><td><input data-k="t1.i"></td><td><input data-k="t1.s"></td><td><input data-k="t1.w"></td><td><input data-k="t1.f"></td><td><input data-k="t1.n"></td></tr>
+  <tr><td><input data-k="t2.i"></td><td><input data-k="t2.s"></td><td><input data-k="t2.w"></td><td><input data-k="t2.f"></td><td><input data-k="t2.n"></td></tr>
+  <tr><td><input data-k="t3.i"></td><td><input data-k="t3.s"></td><td><input data-k="t3.w"></td><td><input data-k="t3.f"></td><td><input data-k="t3.n"></td></tr>
+</table>
+<p><strong>The rule you must be able to state afterwards, in one sentence.</strong> A good target is one that&hellip;</p>
+<textarea data-k="t.rule" class="short"></textarea>
+</div>
+
+<div class="sheet">
+<p class="when">Day 2 &middot; Activity three</p>
+<h2>Worst scan wins</h2>
+<p>Go and scan something difficult. Bring back the failure, not a success.</p>
+<table class="fill">
+  <tr><th style="width:24%">What you scanned</th><th style="width:26%">Material property</th><th style="width:28%">What the scan did wrong</th><th>Would a client accept it?</th></tr>
+  <tr><td><input data-k="s1.o"></td><td><input data-k="s1.m" placeholder="gloss / transparent / thin / fuzzy / moving"></td><td><input data-k="s1.w"></td><td><input data-k="s1.a"></td></tr>
+  <tr><td><input data-k="s2.o"></td><td><input data-k="s2.m"></td><td><input data-k="s2.w"></td><td><input data-k="s2.a"></td></tr>
+  <tr><td><input data-k="s3.o"></td><td><input data-k="s3.m"></td><td><input data-k="s3.w"></td><td><input data-k="s3.a"></td></tr>
+</table>
+<p><strong>Team conclusion.</strong> Name one product in your own capsule that <em>cannot</em> be scanned, and
+say what you would do instead.</p>
+<textarea data-k="s.concl" class="short"></textarea>
+</div>
+
+<div class="sheet">
+<p class="when">Day 2 and Day 3 &middot; the gate &middot; use tool-asset-check</p>
+<h2>Asset gate</h2>
+<p>No model reaches a phone until every row reads PASS. Numbers come from
+<a href="tool-asset-check.html">the asset check</a>; the last row comes from a stopwatch.</p>
+<table class="fill">
+  <tr><th style="width:34%">Check</th><th style="width:16%">Limit</th><th style="width:25%">Ours</th><th>Pass?</th></tr>
+  <tr><td>Triangles</td><td>100,000</td><td><input data-k="g.tri"></td><td><input data-k="g.tri2"></td></tr>
+  <tr><td>Largest texture</td><td>2048 px</td><td><input data-k="g.tex"></td><td><input data-k="g.tex2"></td></tr>
+  <tr><td>File size</td><td>10 MB</td><td><input data-k="g.mb"></td><td><input data-k="g.mb2"></td></tr>
+  <tr><td>Time to first content</td><td>8 s</td><td><input data-k="g.s"></td><td><input data-k="g.s2"></td></tr>
+  <tr><td>True scale, measured against a real object</td><td>1 unit = 1 m</td><td><input data-k="g.sc"></td><td><input data-k="g.sc2"></td></tr>
+  <tr><td>Tested on a phone that is not ours</td><td>whose?</td><td><input data-k="g.ph"></td><td><input data-k="g.ph2"></td></tr>
+</table>
+</div>
+
+<div class="sheet">
+<p class="when">Day 3 &middot; one card per team you watch</p>
+<h2>Jury scoring card</h2>
+<table class="fill">
+  <tr><th style="width:22%">Team</th><td><input data-k="j.team"></td><th style="width:16%">Scorer</th><td><input data-k="j.me"></td></tr>
+</table>
+<table>
+  <tr><th style="width:56%"></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+  <tr><td>I understood the brand within ten seconds</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td></tr>
+  <tr><td>The AR worked on my phone, first try</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td></tr>
+  <tr><td>The three pieces felt like one campaign</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td></tr>
+  <tr><td>AR was the right medium, not a gimmick</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td></tr>
+  <tr><td>I would put this in a portfolio</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td><td class="dots">&#9675;</td></tr>
+</table>
+<p><strong>One thing I would steal from this team</strong></p>
+<textarea data-k="j.steal" class="short"></textarea>
+<p><strong>One thing that broke or confused me</strong></p>
+<textarea data-k="j.broke" class="short"></textarea>
+<p><strong>The question every team gets asked</strong></p>
+<blockquote>If the phone was taken away, what is left?</blockquote>
+<p class="note">If the answer is "nothing", the AR was decoration. If the answer is "a strong printed campaign
+that is extended by a phone", the objective of the module has been met.</p>
+</div>
+
+<div class="sheet">
+<p class="when">Reference</p>
+<h2>How the 100 marks break down</h2>
+<table>
+  <tr><th style="width:8%"></th><th style="width:34%">Criterion</th><th style="width:10%">Marks</th><th>Full marks looks like</th></tr>
+  <tr><td>1</td><td>Campaign coherence</td><td>20</td><td>A stranger seeing one artifact could guess the other two.</td></tr>
+  <tr><td>2</td><td>The Living Lookbook</td><td>15</td><td>Tracks fast, holds steady, reveal motivated by the design. Print stands alone.</td></tr>
+  <tr><td>3</td><td>The Brand Filter</td><td>15</td><td>Anchors cleanly, does not drift on a moving face, carries the brand without a logo on a forehead.</td></tr>
+  <tr><td>4</td><td>The Placed Product</td><td>15</td><td>Clean scan within budget, true scale, shadow contact reads, survives being walked around.</td></tr>
+  <tr><td>5</td><td>Craft of the AR itself</td><td>10</td><td>Loads fast, no drift, no jitter, sensible behaviour when tracking is lost.</td></tr>
+  <tr><td>6</td><td>Vocabulary and reasoning</td><td>10</td><td>The team explains its choices using trigger, anchor, tracking, occlusion, drift and payload correctly.</td></tr>
+  <tr><td>7</td><td>The reel and the sheet</td><td>10</td><td>Documents the experience itself rather than a screen recording of a menu.</td></tr>
+  <tr><td>8</td><td>Process</td><td>5</td><td>Storyboard, target clinic before and after, asset-gate pass, evidence of testing on other people's phones.</td></tr>
+</table>
+<p><strong>Distinction requires full marks on criterion six.</strong> A student who builds a beautiful filter
+but cannot say why the anchor drifted has learned a template, not a medium.</p>
+<h3>Automatic deductions</h3>
+<table>
+  <tr><td style="width:70%">Never tested on another person's phone</td><td class="mono">&minus;10</td></tr>
+  <tr><td>Placed product not at true scale</td><td class="mono">&minus;10</td></tr>
+  <tr><td>Instruction line missing or illegible on the print piece</td><td class="mono">&minus;5</td></tr>
+  <tr><td>A borrowed 3D model passed off as a scan</td><td class="mono">&minus;15</td></tr>
+</table>
+</div>
+
+<footer>worksheets &middot; Days 1&ndash;3 &middot; printable &middot; typed answers stay on this device</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var KEY = "xr.worksheets";
+  var store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { store = {}; }
+
+  var fields = document.querySelectorAll("[data-k]");
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+    document.getElementById("save").textContent = "saved " + new Date().toLocaleTimeString();
+  }
+  for (var i = 0; i < fields.length; i++) {
+    (function (f) {
+      var k = f.dataset.k;
+      if (store[k]) f.value = store[k];
+      f.addEventListener("input", function () { store[k] = f.value; save(); });
+    })(fields[i]);
+  }
+
+  document.getElementById("print").addEventListener("click", function () { window.print(); });
+  document.getElementById("wipe").addEventListener("click", function () {
+    if (!window.confirm("Erase every answer on this device?")) return;
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>

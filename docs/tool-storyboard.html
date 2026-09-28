@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storyboard: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .beat { border: 0; border-top: 5px solid var(--ink); background: var(--paper-2); padding: 16px 18px; margin: 18px 0; }
+  .beat h4 { margin: 0 0 4px; }
+  .beat .q { color: var(--ink-soft); margin: 0 0 10px; font-size: 0.9rem; }
+  .beat textarea { min-height: 76px; }
+  .num {
+    display: inline-block; font-size: .66rem; font-weight: 800; letter-spacing: .13em;
+    background: var(--accent); color: var(--paper); padding: .2em .6em; margin-right: 10px;
+    vertical-align: .12em;
+  }
+  .saved { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-mute); }
+  .sheet { display: none; }
+  @media print {
+    .noprint { display: none !important; }
+    nav.level-picker { display: none !important; }
+    section.level { display: block !important; page-break-after: always; }
+    textarea { border: none; border-bottom: 1px solid #000; background: #fff; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap wide">
+<p class="backlink noprint"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Storyboard</h1>
+<p class="subtitle">Four beats. Write them before you touch a tool.</p>
+
+<p class="noprint">Every AR piece that works is the same four beats. Most that fail are missing beat two.
+nobody told the viewer to raise their phone. Fill one sheet per artifact. Typing saves to this device as you
+go; nothing leaves the phone.</p>
+
+<nav class="level-picker noprint">
+  <a href="#lookbook" data-day="lookbook" class="active">Living Lookbook</a>
+  <a href="#filter" data-day="filter">Brand Filter</a>
+  <a href="#placed" data-day="placed">Placed Product</a>
+  <a href="#howto" data-day="howto">How to use this</a>
+</nav>
+
+<section class="level active" id="lookbook">
+  <h2>Artifact one &middot; The Living Lookbook</h2>
+  <p class="note noprint">A printed page that plays. Image target &rarr; video or artwork.</p>
+  <div id="f-lookbook"></div>
+</section>
+
+<section class="level" id="filter">
+  <h2>Artifact two &middot; The Brand Filter</h2>
+  <p class="note noprint">A face effect someone would use twice. Face landmarks &rarr; brand object.</p>
+  <div id="f-filter"></div>
+</section>
+
+<section class="level" id="placed">
+  <h2>Artifact three &middot; The Placed Product</h2>
+  <p class="note noprint">One object, real size, in a real room. Plane &rarr; 3D model.</p>
+  <div id="f-placed"></div>
+</section>
+
+<section class="level" id="howto">
+  <h2>How to use this</h2>
+  <p>Fifteen minutes per sheet. Each line is a decision that the build will be held to, so write the sentence
+  you would use to describe the piece to a client rather than a description of a feature.</p>
+  <table>
+    <tr><th style="width:22%">Beat</th><th>The failure it prevents</th></tr>
+    <tr><td>Trigger</td><td>Building something with nothing to point at. Half of first-time AR projects never decide what the camera is actually looking for.</td></tr>
+    <tr><td>Invitation</td><td>A perfect experience nobody opens. If there is no printed line, no QR, no sign and no sales assistant saying it, there is no audience.</td></tr>
+    <tr><td>Payload</td><td>Showing everything at once. One idea per trigger; a rotating logo restates the brand mark without adding an idea.</td></tr>
+    <tr><td>Payoff</td><td>A moment with no exit. What does the viewer do next, and what do they carry away when the phone goes back in the pocket?</td></tr>
+  </table>
+  <h3>Before you leave the sheet</h3>
+  <blockquote>Read beat four aloud. If the stated payoff is only that the viewer finds it impressive, beat three needs rewriting.</blockquote>
+  <p class="noprint"><button id="print">Print all three sheets</button>
+  <button id="wipe">Clear everything on this device</button></p>
+</section>
+
+<footer>tool-storyboard &middot; Day 1 storyboard sprint &middot; saves to this device only</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var KEY = "xr.storyboard";
+
+  var BEATS = [
+    ["Trigger", "What exactly is the camera looking at? Name the physical thing: a printed page, a face, a floor. Be specific enough that someone could go and fetch it."],
+    ["Invitation", "What tells a person to raise their phone at all? A printed line, a QR, a sign, a person saying it. Write the words."],
+    ["Payload", "What appears, and for how long? One idea. Describe it as if it is already on screen in front of you."],
+    ["Payoff", "What does the viewer do or feel next, and what is left when the phone goes back in the pocket?"]
+  ];
+
+  var EXTRA = [
+    ["One-line summary", "The whole piece stated in a single sentence, as it would be described to a client."],
+    ["Honest failure mode", "Where will this break in the room: bad light, a shiny surface, a glare, someone standing too far back. Say it before the jury does."]
+  ];
+
+  var store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { store = {}; }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+    var s = document.querySelectorAll(".saved");
+    for (var i = 0; i < s.length; i++) s[i].textContent = "saved " + new Date().toLocaleTimeString();
+  }
+
+  function field(id, n, title, q) {
+    var key = id + "." + title;
+    var d = document.createElement("div");
+    d.className = "beat";
+    d.innerHTML = "<h4><span class=\"num\">" + n + "</span>" + title + "</h4><p class=\"q\">" + q + "</p>";
+    var t = document.createElement("textarea");
+    t.value = store[key] || "";
+    t.addEventListener("input", function () { store[key] = t.value; save(); });
+    d.appendChild(t);
+    return d;
+  }
+
+  ["lookbook", "filter", "placed"].forEach(function (id) {
+    var host = document.getElementById("f-" + id);
+    BEATS.forEach(function (b, i) { host.appendChild(field(id, i + 1, b[0], b[1])); });
+    EXTRA.forEach(function (b) { host.appendChild(field(id, "·", b[0], b[1])); });
+    var s = document.createElement("p");
+    s.className = "saved noprint";
+    host.appendChild(s);
+  });
+
+  var panes = document.querySelectorAll("section.level");
+  var links = document.querySelectorAll("nav.level-picker a");
+  function show(id) {
+    var found = false;
+    for (var i = 0; i < panes.length; i++) {
+      var on = panes[i].id === id;
+      panes[i].classList.toggle("active", on);
+      if (on) found = true;
+    }
+    for (var j = 0; j < links.length; j++) links[j].classList.toggle("active", links[j].dataset.day === id);
+    if (found) { try { history.replaceState(null, "", "#" + id); } catch (e) {} }
+  }
+  for (var k = 0; k < links.length; k++) {
+    links[k].addEventListener("click", function (e) { e.preventDefault(); show(this.dataset.day); });
+  }
+  if (location.hash) show(location.hash.slice(1));
+
+  document.getElementById("print").addEventListener("click", function () { window.print(); });
+  document.getElementById("wipe").addEventListener("click", function () {
+    if (!window.confirm("Erase all three storyboards on this device?")) return;
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>

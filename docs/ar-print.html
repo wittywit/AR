@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Print to AR: Extended Reality</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* the AR view takes the whole screen once it starts */
+  #stage { position: fixed; inset: 0; display: none; background: var(--ink); z-index: 50; }
+  #stage.on { display: block; }
+  #stage .hud {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 60;
+    background: var(--paper); border-top: 5px solid var(--accent); padding: 10px 14px;
+    font-family: var(--mono); font-size: 0.76rem;
+    display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  }
+  #stage .hud button { margin: 0; }
+  #status { flex: 1 1 auto; }
+  a-scene { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="backlink"><a href="index.html">&larr; Handbook</a></p>
+
+<h1>Print &rarr; AR</h1>
+<p class="subtitle">The Living Lookbook. A printed page becomes a trigger, and something happens on top of it.</p>
+
+<p>This is the whole of image-target AR, with nothing hidden: a <strong>trigger</strong> the camera recognises,
+a <strong>payload</strong> attached to it, and <strong>tracking</strong> that keeps the payload registered as
+you move. Nothing is uploaded. Everything runs in this browser.</p>
+
+<div class="panel">
+  <h3>1 &middot; The trigger</h3>
+  <p>Print this page, or open it on a second screen. A laptop or another phone works.</p>
+  <p class="mono"><a id="cardlink" href="#" target="_blank" rel="noopener">Open the practice target &rarr;</a></p>
+  <p class="note">Using your own artwork? Score it in
+  <a href="sim-tracking.html">sim-tracking</a> first, then compile it to a <code>.mind</code> file with the
+  MindAR image compiler and load it below. A target that scores under 50 will waste your afternoon.</p>
+  <label for="mind">Your own compiled target (<code>.mind</code>), optional</label>
+  <input type="file" id="mind" accept=".mind">
+</div>
+
+<div class="panel">
+  <h3>2 &middot; The payload</h3>
+  <p>Pick what appears on top of the page. A short video is the classic living-lookbook move; a still is fine.</p>
+  <label for="media">Image or video from your phone, optional</label>
+  <input type="file" id="media" accept="image/*,video/*">
+  <p class="note">Leave it empty and you get a built-in placeholder card, which is enough to prove the
+  mechanic works before you have finished shooting.</p>
+</div>
+
+<div class="panel">
+  <h3>3 &middot; Run it</h3>
+  <p>The camera needs <strong>HTTPS or localhost</strong>. If the button does nothing, you opened this file
+  directly from disk. See the note at the bottom.</p>
+  <button id="go">Start camera</button>
+  <p class="note" id="warn"></p>
+</div>
+
+<h2>What to watch for</h2>
+<table>
+  <tr><th style="width:26%">Do this</th><th>And notice</th></tr>
+  <tr><td>Tilt the page to forty-five degrees</td><td>Where it gives up. That is your real-world viewing angle budget.</td></tr>
+  <tr><td>Cover a third of the page</td><td>Which third kills it. That is what a thumb, a fold or a staple does.</td></tr>
+  <tr><td>Walk away from it</td><td>The distance at which it drops. Print bigger and it holds longer.</td></tr>
+  <tr><td>Move it under a lamp, then a window</td><td>Glare erases features exactly like darkness does.</td></tr>
+  <tr><td>Time from opening to seeing something</td><td>If it is over eight seconds, nobody in a real shop will wait.</td></tr>
+</table>
+
+<h2>If it will not start</h2>
+<p>A browser will only hand over the camera on a secure origin. Serve this folder instead of double-clicking it:</p>
+<pre><code>cd docs
+python3 -m http.server 8000</code></pre>
+<p>then open <code>http://localhost:8000/ar-print.html</code>. On a phone, reach your laptop's address over the
+same Wi-Fi, or put the folder on any HTTPS host.</p>
+
+<footer>ar-print &middot; Day 1, cold open and Drill 1 &middot; rear camera &middot; HTTPS or localhost required</footer>
+</div>
+
+<div id="stage">
+  <div class="hud">
+    <span id="status">Starting camera&hellip;</span>
+    <button id="stop">Stop</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var CDN_AFRAME = "https://aframe.io/releases/1.5.0/aframe.min.js";
+  var CDN_MINDAR = "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js";
+  var DEFAULT_MIND = "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind";
+  var DEFAULT_CARD = "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png";
+
+  var el = function (id) { return document.getElementById(id); };
+  el("cardlink").href = DEFAULT_CARD;
+
+  var mindURL = DEFAULT_MIND, mediaURL = null, mediaKind = null, started = false;
+
+  if (!window.isSecureContext) {
+    el("warn").textContent =
+      "This page is not on a secure origin, so the browser will refuse the camera. Serve the folder over localhost or HTTPS. See below.";
+  }
+
+  el("mind").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (f) { mindURL = URL.createObjectURL(f); el("warn").textContent = "Using your compiled target: " + f.name; }
+  });
+
+  el("media").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    mediaURL = URL.createObjectURL(f);
+    mediaKind = f.type.indexOf("video") === 0 ? "video" : "image";
+    el("warn").textContent = "Payload: " + f.name + " (" + Math.round(f.size / 1024) + " KB)";
+  });
+
+  function load(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = function () { rej(new Error(src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function build() {
+    var assets = mediaURL
+      ? (mediaKind === "video"
+          ? '<video id="pl" src="' + mediaURL + '" preload="auto" loop muted playsinline webkit-playsinline crossorigin="anonymous"></video>'
+          : '<img id="pl" src="' + mediaURL + '" crossorigin="anonymous">')
+      : "";
+
+    var payload = mediaURL
+      ? '<a-plane src="#pl" position="0 0 0.02" height="0.552" width="1" rotation="0 0 0"></a-plane>'
+      : '<a-plane color="#000000" position="0 0 0.02" height="0.552" width="1"></a-plane>' +
+        '<a-text value="LOOK 04" align="center" color="#FFFFFF" width="2" position="0 0.12 0.03"></a-text>' +
+        '<a-text value="tap to replace me with your own film" align="center" color="#FFFFFF" width="1.1" position="0 -0.04 0.03"></a-text>' +
+        '<a-box position="0 -0.22 0.10" width="0.16" height="0.16" depth="0.16" color="#FFFFFF" ' +
+        'animation="property: rotation; to: 0 360 0; dur: 6000; loop: true; easing: linear"></a-box>';
+
+    var stage = el("stage");
+    stage.insertAdjacentHTML("afterbegin",
+      '<a-scene mindar-image="imageTargetSrc: ' + mindURL + '; uiScanning: yes; uiLoading: no;" ' +
+      'color-space="sRGB" embedded renderer="colorManagement: true, physicallyCorrectLights" ' +
+      'vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">' +
+        '<a-assets>' + assets + '</a-assets>' +
+        '<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>' +
+        '<a-entity id="anchor" mindar-image-target="targetIndex: 0">' + payload + '</a-entity>' +
+      '</a-scene>');
+
+    var scene = stage.querySelector("a-scene");
+    var anchor = stage.querySelector("#anchor");
+    var vid = stage.querySelector("video#pl");
+
+    anchor.addEventListener("targetFound", function () {
+      el("status").textContent = "Target found. Tracking";
+      if (vid) { vid.play().catch(function () {}); }
+    });
+    anchor.addEventListener("targetLost", function () {
+      el("status").textContent = "Target lost. Point back at the page";
+      if (vid) { vid.pause(); }
+    });
+    scene.addEventListener("arReady", function () {
+      el("status").textContent = "Ready. Point at the printed page";
+    });
+    scene.addEventListener("arError", function () {
+      el("status").textContent = "Could not start. Check camera permission, and that you are on HTTPS or localhost.";
+    });
+  }
+
+  el("go").addEventListener("click", function () {
+    if (started) return;
+    started = true;
+    this.disabled = true;
+    this.textContent = "Loading…";
+    el("stage").classList.add("on");
+    var self = this;
+    load(CDN_AFRAME)
+      .then(function () { return load(CDN_MINDAR); })
+      .then(build)
+      .catch(function () {
+        el("status").textContent = "Could not load the AR libraries. There is no network. Use the offline bundle in README §Plan B.";
+        self.disabled = false; self.textContent = "Start camera"; started = false;
+      });
+  });
+
+  el("stop").addEventListener("click", function () { location.reload(); });
+})();
+</script>
+</body>
+</html>
